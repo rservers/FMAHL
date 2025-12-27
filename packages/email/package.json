@@ -1,0 +1,16 @@
+{
+  "name": "email",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {
+    "nodemailer": "^6.9.8",
+    "@aws-sdk/client-ses": "^3.490.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/nodemailer": "^6.4.14",
+    "typescript": "^5.3.3"
+  }
+}

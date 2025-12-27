@@ -1,0 +1,14 @@
+{
+  "name": "database",
+  "version": "0.1.0",
+  "private": true,
+  "main": "client.ts",
+  "dependencies": {
+    "postgres": "^3.4.3",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  }
+}
