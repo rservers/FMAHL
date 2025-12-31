@@ -1,0 +1,886 @@
+# Find Me A Hot Lead - Cursor AI Rules
+
+## Project Overview
+Multi-tenant B2B SaaS marketplace connecting service providers with qualified leads.
+First niche: VPS/Server providers. Future niches: Location-based services (plumbers, realtors, dentists).
+
+## Tech Stack (Confirmed)
+- **Frontend**: Next.js 14+ (App Router), React, TypeScript, Tailwind CSS, shadcn/ui
+- **Backend**: Next.js API Routes, Node.js
+- **Database**: PostgreSQL 16 + PostGIS (self-hosted)
+- **Auth**: JWT tokens (custom implementation)
+- **Payment**: Stripe
+- **Background Jobs**: BullMQ + Redis
+- **Email**: MailHog (dev) + Amazon SES (production)
+- **File Storage**: TrueNAS S3 API (primary) + Wasabi (backup)
+- **Monitoring**: Grafana + Prometheus + Loki (self-hosted)
+- **Testing**: Vitest (unit/integration) + Playwright (E2E) + SuperTest (API)
+- **CI/CD**: GitHub Actions
+
+## Core Development Principles
+
+### 1. Code Quality & Maintainability
+- **KISS (Keep It Simple, Stupid)**: Prefer simple, readable solutions over clever ones
+- **DRY (Don't Repeat Yourself)**: Extract repeated logic into reusable functions/components
+- **YAGNI (You Aren't Gonna Need It)**: Don't add functionality until it's needed
+- **Single Responsibility**: Each function/class/module should do one thing well
+- **Separation of Concerns**: Keep business logic, UI, and data access separate
+- **Fail Fast**: Validate inputs early and throw errors immediately when something is wrong
+- **Explicit over Implicit**: Make intentions clear in code, avoid magic numbers/strings
+
+### 2. Code Complexity Limits
+- **Functions**: Max 50 lines (ideally 20-30)
+- **Files**: Max 300 lines (split into multiple files if larger)
+- **Function Parameters**: Max 4 parameters (use object destructuring for more)
+- **Nesting Depth**: Max 3 levels (use early returns to reduce nesting)
+- **Cyclomatic Complexity**: Max 10 per function
+- **Cognitive Complexity**: Keep it low - if you need to think hard to understand it, refactor it
+
+### 3. Naming Conventions
+- **Variables/Functions**: camelCase (`getUserById`, `isActive`, `totalAmount`)
+- **Classes/Types/Interfaces**: PascalCase (`User`, `LeadDistribution`, `ApiResponse`)
+- **Constants**: UPPER_SNAKE_CASE (`MAX_RETRIES`, `DEFAULT_TIMEOUT`)
+- **Private Properties**: Prefix with underscore (`_internalState`)
+- **Boolean Variables**: Use `is`, `has`, `should`, `can` prefixes (`isLoading`, `hasPermission`)
+- **Functions**: Use verb prefixes (`get`, `set`, `create`, `update`, `delete`, `fetch`, `calculate`)
+- **Event Handlers**: Use `handle` or `on` prefix (`handleSubmit`, `onClick`)
+- **Async Functions**: Consider `async` suffix for clarity (`fetchUserAsync`) when not obvious
+- **Files**: kebab-case for files (`lead-distribution.ts`, `user-service.ts`)
+- **Folders**: kebab-case for folders (`api-routes`, `user-management`)
+
+### 4. Function & Method Design
+- **Pure Functions**: Prefer pure functions (same input = same output, no side effects)
+- **Single Return Type**: Functions should return consistent types (not `User | null | undefined`)
+- **Early Returns**: Use guard clauses and early returns to reduce nesting
+- **Default Parameters**: Use default parameters instead of checking for undefined
+- **Destructuring**: Use object destructuring for function parameters with >2 args
+- **Arrow Functions**: Use arrow functions for callbacks and short functions
+- **Named Functions**: Use named functions for complex logic (better stack traces)
+- **Avoid Side Effects**: Functions should not modify external state unless that's their purpose
+
+Example:
+```typescript
+// ❌ Bad: Too many parameters, nested logic
+function createUser(email, password, firstName, lastName, role, isActive) {
+  if (email) {
+    if (password) {
+      if (firstName) {
+        // ... nested logic
+      }
+    }
+  }
+}
+
+// ✅ Good: Object parameter, early returns, clear
+interface CreateUserParams {
+  email: string
+  password: string
+  firstName: string
+  lastName: string
+  role: 'provider' | 'buyer' | 'admin'
+  isActive?: boolean
+}
+
+function createUser(params: CreateUserParams): User {
+  const { email, password, firstName, lastName, role, isActive = true } = params
+
+  if (!email) throw new Error('Email is required')
+  if (!password) throw new Error('Password is required')
+  if (!firstName) throw new Error('First name is required')
+
+  // ... create user logic
+}
+```
+
+### 5. Error Handling Patterns
+- **Always Handle Errors**: Never use empty catch blocks
+- **Specific Error Types**: Create custom error classes for different error types
+- **Error Context**: Include relevant context in error messages
+- **Fail Fast**: Validate inputs at the start of functions
+- **Graceful Degradation**: Handle errors gracefully in UI (show user-friendly messages)
+- **Log Errors**: Always log errors with context (user ID, request ID, etc.)
+- **Don't Swallow Errors**: Re-throw errors after logging if you can't handle them
+- **Use Result Types**: Consider using Result<T, E> pattern for expected errors
+
+Example:
+```typescript
+// ❌ Bad: Silent failure
+try {
+  await updateUser(userId, data)
+} catch (error) {
+  // Nothing
+}
+
+// ✅ Good: Proper error handling
+try {
+  await updateUser(userId, data)
+} catch (error) {
+  if (error instanceof ValidationError) {
+    return { success: false, error: error.message }
+  }
+
+  if (error instanceof NotFoundError) {
+    return { success: false, error: 'User not found' }
+  }
+
+  // Log unexpected errors
+  logger.error('Failed to update user', {
+    userId,
+    error: error.message,
+    stack: error.stack,
+  })
+
+  throw error // Re-throw if we can't handle it
+}
+```
+
+### 6. Async/Await Best Practices
+- **Always Use async/await**: Prefer async/await over raw Promises
+- **Handle Rejections**: Always use try/catch with async/await
+- **Parallel Execution**: Use `Promise.all()` for independent async operations
+- **Sequential When Needed**: Use `await` in sequence only when operations depend on each other
+- **Avoid Async in Constructors**: Never use async in class constructors
+- **Return Promises**: Don't mix async/await with `.then()/.catch()`
+
+Example:
+```typescript
+// ❌ Bad: Sequential when could be parallel
+async function getUserData(userId: string) {
+  const user = await fetchUser(userId)
+  const posts = await fetchPosts(userId)
+  const comments = await fetchComments(userId)
+  return { user, posts, comments }
+}
+
+// ✅ Good: Parallel execution
+async function getUserData(userId: string) {
+  const [user, posts, comments] = await Promise.all([
+    fetchUser(userId),
+    fetchPosts(userId),
+    fetchComments(userId),
+  ])
+  return { user, posts, comments }
+}
+```
+
+### 7. Import/Export Organization
+- **Order Imports**: External packages → Internal modules → Types → Styles
+- **Named Exports**: Prefer named exports over default exports (better refactoring)
+- **Barrel Exports**: Use index.ts for clean imports from folders
+- **Absolute Imports**: Use `@/` alias for absolute imports (no `../../..`)
+- **Type Imports**: Use `import type` for type-only imports (better tree-shaking)
+
+Example:
+```typescript
+// ✅ Good import order
+// External packages
+import { useState, useEffect } from 'react'
+import { z } from 'zod'
+
+// Internal modules
+import { fetchUser } from '@/lib/services/user-service'
+import { Button } from '@/components/ui/button'
+
+// Types
+import type { User } from '@/types/user'
+
+// Styles (if needed)
+import styles from './component.module.css'
+```
+
+### 8. Type Safety Rules
+- **No `any`**: Avoid `any` type unless absolutely necessary (use `unknown` instead)
+- **Strict Null Checks**: Always handle `null` and `undefined` explicitly
+- **Type Guards**: Use type guards for runtime type checking
+- **Discriminated Unions**: Use discriminated unions for complex state
+- **Const Assertions**: Use `as const` for literal types
+- **Generic Constraints**: Use generic constraints to make types more specific
+- **Avoid Type Assertions**: Minimize use of `as` type assertions (prefer type guards)
+
+Example:
+```typescript
+// ❌ Bad: Using any
+function processData(data: any) {
+  return data.value
+}
+
+// ✅ Good: Proper typing
+interface DataWithValue {
+  value: string
+}
+
+function processData(data: DataWithValue): string {
+  return data.value
+}
+
+// ✅ Good: Type guard
+function isUser(obj: unknown): obj is User {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'id' in obj &&
+    'email' in obj
+  )
+}
+```
+
+### 9. Performance Best Practices
+- **Memoization**: Use `useMemo` and `useCallback` for expensive computations (but don't overuse)
+- **Lazy Loading**: Lazy load components and routes that aren't immediately needed
+- **Debouncing**: Debounce search inputs and frequent API calls
+- **Pagination**: Always paginate large lists
+- **Indexes**: Add database indexes for frequently queried columns
+- **Connection Pooling**: Reuse database connections
+- **Avoid N+1 Queries**: Use joins or batch queries instead of loops
+- **Bundle Size**: Monitor and optimize bundle size (use dynamic imports)
+
+### 10. Security Best Practices
+- **Input Validation**: Validate all user inputs (use Zod)
+- **Output Encoding**: Escape user-generated content (React does this by default)
+- **Parameterized Queries**: Always use parameterized queries (never string concatenation)
+- **Authentication**: Verify JWT on all protected routes
+- **Authorization**: Check permissions before operations
+- **Rate Limiting**: Implement rate limiting on sensitive endpoints
+- **HTTPS Only**: Use HTTPS in production
+- **Secrets Management**: Never commit secrets (use environment variables)
+- **CSRF Protection**: Implement CSRF protection for state-changing operations
+- **Content Security Policy**: Set CSP headers
+
+## Architecture Principles
+1. **API-First**: All business logic exposed via REST APIs
+2. **Financial Accuracy**: Use Postgres transactions, optimistic locking, decimal types
+3. **Audit Trail**: Log all financial transactions and state changes
+4. **Multi-tenancy**: Row-Level Security (RLS) for data isolation
+5. **Extensibility**: Dynamic form schemas for different niches
+6. **Performance**: Indexed queries, connection pooling, caching
+7. **Self-hosted First**: Prefer self-hosted solutions, use services only when they save significant time/cost
+
+## TypeScript & Project Structure
+
+### TypeScript Compiler Rules
+- Enable `strict`, `noImplicitAny`, `noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`
+- Target ES2020 minimum
+- `moduleResolution: "node"`
+- `forceConsistentCasingInFileNames: true`
+- No `any` without explicit `// eslint-disable-next-line @typescript-eslint/no-explicit-any` and justification
+
+### Feature-Based Structure
+```
+apps/web/
+├── app/                    # Next.js App Router
+│   ├── api/               # API routes (feature-based)
+│   │   ├── auth/
+│   │   ├── leads/
+│   │   ├── subscriptions/
+│   │   └── payments/
+│   ├── (auth)/            # Auth pages (login, signup)
+│   ├── dashboard/         # Protected dashboard
+│   └── layout.tsx
+├── components/            # React components
+│   ├── ui/               # shadcn/ui components
+│   └── features/         # Feature-specific components
+├── lib/                   # Utilities & services
+│   ├── db.ts             # Database client
+│   ├── jwt.ts            # JWT utilities
+│   ├── password.ts       # Password hashing
+│   ├── services/         # Business logic services
+│   └── validations/      # Zod schemas
+├── contexts/             # React contexts
+├── hooks/                # Custom hooks
+├── types/                # TypeScript types
+└── tests/                # Tests (co-located or centralized)
+    ├── unit/
+    ├── integration/
+    ├── api/
+    └── e2e/
+```
+
+### Null/Undefined Discipline
+- Prefer `undefined` internally
+- Reserve `null` only where external APIs demand it
+- Model domain data with `type`/`interface`
+- Avoid `any`, keep unions/intersections simple and named
+
+## Code Style & Quality
+
+### ESLint + Prettier
+- Use `@typescript-eslint/parser` and `plugin:@typescript-eslint/recommended`
+- Use Prettier for formatting with `eslint-config-prettier`
+- Configure Cursor to run `eslint --fix` and Prettier on save
+- No semicolons (Prettier default)
+- Single quotes for strings
+- Trailing commas where valid
+
+### Commenting & Documentation Rules
+- **JSDoc/TSDoc** for all public functions, classes, and exported types
+- **Module-level doc blocks** for each feature folder explaining:
+  - Purpose
+  - Inputs/outputs
+  - External dependencies (Postgres, Redis, Stripe, etc.)
+- **Inline comments** only for non-obvious business rules or complex logic
+- **Forbid redundant comments** that restate what the code already expresses
+- **TODO Comments**: Use `// TODO: description` for future work (include ticket number if applicable)
+- **FIXME Comments**: Use `// FIXME: description` for known issues that need fixing
+- Example:
+  ```typescript
+  /**
+   * Distributes a lead to eligible providers using fair queue algorithm.
+   * 
+   * Algorithm:
+   * 1. Filter providers by balance, active hours, and filter criteria
+   * 2. Sort by last_received_at (NULL first for new providers)
+   * 3. Assign lead and deduct balance atomically
+   * 
+   * @param leadId - UUID of the lead to distribute
+   * @param nicheId - UUID of the niche
+   * @returns Array of provider IDs who received the lead
+   * 
+   * @throws {InsufficientProvidersError} When no eligible providers found
+   * @throws {DatabaseError} When transaction fails
+   * 
+   * Dependencies:
+   * - Postgres: provider_subscriptions, provider_ledger, lead_assignments
+   * - Redis: BullMQ for async email notifications
+   * 
+   * @example
+   * const providerIds = await distributeLead('lead-123', 'niche-456')
+   * console.log(`Lead distributed to ${providerIds.length} providers`)
+   */
+  export async function distributeLead(leadId: string, nicheId: string): Promise<string[]> {
+    // Implementation
+  }
+  ```
+
+### Git & Repo Hygiene
+- `.gitignore` must include: `node_modules`, `dist`, `.turbo`, `.next`, `coverage`, `.env*`, `*.log`
+- Each package must have a minimal `README.md` describing purpose and main commands
+- Commit messages follow conventional commits: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`
+- No commits to `main` without PR (enforce via GitHub branch protection)
+- Keep commits atomic (one logical change per commit)
+- Write descriptive commit messages (explain WHY, not just WHAT)
+
+## Testing Rules (80%+ Coverage Target)
+
+### Testing Pyramid
+- **60-70%**: Unit/service tests (Vitest)
+- **20-30%**: API integration tests (SuperTest + Vitest)
+- **10%**: E2E UI tests (Playwright)
+
+### Unit/Service Tests (Vitest)
+- **Location**: Co-located `*.test.ts` or `/tests/unit/`
+- **Coverage**: All non-trivial services, utilities, and business logic
+- **Requirements**:
+  - Test success, failure, and boundary cases
+  - Mock external dependencies (DB, Redis, Stripe, SES)
+  - Fast (<100ms per test)
+  - Deterministic (no flaky tests)
+  - Use descriptive test names (should read like documentation)
+- **Example**:
+  ```typescript
+  // lib/services/lead-distribution.test.ts
+  import { describe, it, expect, vi, beforeEach } from 'vitest'
+  import { distributeLead } from './lead-distribution'
+
+  describe('distributeLead', () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+    })
+
+    it('should distribute lead to eligible providers', async () => {
+      // Test implementation
+    })
+
+    it('should throw InsufficientProvidersError when no eligible providers', async () => {
+      // Test implementation
+    })
+
+    it('should prioritize providers who have not received leads recently', async () => {
+      // Test implementation
+    })
+
+    it('should skip providers with insufficient balance', async () => {
+      // Test implementation
+    })
+  })
+  ```
+
+### API Tests (SuperTest + Vitest)
+- **Location**: `/tests/api/<feature>.test.ts`
+- **Coverage**: All API routes
+- **Requirements**:
+  - Test auth flows, permission boundaries, error handling
+  - Use test database (reset state per suite)
+  - Test representative Postgres/Redis interactions
+  - Verify HTTP status codes, response structure, error messages
+- **Setup**: Use Docker Compose for test DB/Redis
+- **Example**:
+  ```typescript
+  // tests/api/auth.test.ts
+  import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+  import request from 'supertest'
+  import { app } from '@/app'
+
+  describe('POST /api/auth/signup', () => {
+    it('should create new user and return token', async () => {
+      const response = await request(app)
+        .post('/api/auth/signup')
+        .send({
+          email: 'test@example.com',
+          password: 'password123',
+          firstName: 'John',
+          lastName: 'Doe',
+          role: 'provider'
+        })
+
+      expect(response.status).toBe(201)
+      expect(response.body).toHaveProperty('token')
+      expect(response.body.user.email).toBe('test@example.com')
+    })
+
+    it('should return 400 for invalid email', async () => {
+      // Test implementation
+    })
+
+    it('should return 409 for duplicate email', async () => {
+      // Test implementation
+    })
+  })
+  ```
+
+### UI/E2E Tests (Playwright)
+- **Location**: `/tests/e2e/<feature>.spec.ts`
+- **Coverage**: Critical user flows only
+  - Login/signup
+  - Lead submission
+  - Provider dashboard (view leads, manage subscription)
+  - Payment flow
+  - Admin dashboard
+- **Requirements**:
+  - Use Page Object Model (POM)
+  - Test accessibility (ARIA labels, keyboard navigation)
+  - Test responsive design (mobile, tablet, desktop)
+  - Parallel execution where possible
+- **Example**:
+  ```typescript
+  // tests/e2e/auth.spec.ts
+  import { test, expect } from '@playwright/test'
+
+  test.describe('Authentication', () => {
+    test('should sign up new provider', async ({ page }) => {
+      await page.goto('/signup')
+      await page.fill('[name="email"]', 'test@example.com')
+      await page.fill('[name="password"]', 'password123')
+      await page.fill('[name="firstName"]', 'John')
+      await page.fill('[name="lastName"]', 'Doe')
+      await page.selectOption('[name="role"]', 'provider')
+      await page.click('button[type="submit"]')
+
+      await expect(page).toHaveURL('/dashboard')
+      await expect(page.locator('h1')).toContainText('Welcome, John')
+    })
+  })
+  ```
+
+### Component Tests (Playwright Component Testing)
+- **Location**: Co-located with components `MyDialog.spec.tsx`
+- **Coverage**: Complex shadcn/ui components (dialogs, popovers, forms)
+- **Requirements**:
+  - Test user interactions (click, type, submit)
+  - Test accessibility
+  - Test edge cases (validation errors, loading states)
+
+### Test Data Management
+- **Migrations**: Run in Jest/Vitest global setup
+- **Seed data**: Minimal fixtures for tests
+- **Isolation**: Transaction-per-test with rollback in teardown OR reset DB between suites
+- **No shared state**: Each test should be independent
+
+## React/Next.js Specifics
+
+### React Component Rules
+- Use **function components** with typed props interfaces
+- Avoid `React.FC` (not needed in modern React)
+- Keep shadcn/ui components **dumb** (UI only)
+- Push business logic into **hooks** or **services**
+- Use **Server Components** by default, **Client Components** only when needed (`'use client'`)
+- Prefer **async Server Components** for data fetching
+- Use **Server Actions** for mutations when appropriate
+- **Component Size**: Keep components under 200 lines (split into smaller components)
+- **Props Drilling**: Avoid passing props through more than 2 levels (use context or composition)
+
+### React Hooks Rules
+- **Custom Hooks**: Extract reusable logic into custom hooks (prefix with `use`)
+- **Hook Dependencies**: Always include all dependencies in useEffect/useMemo/useCallback
+- **Cleanup**: Always cleanup side effects in useEffect (return cleanup function)
+- **Conditional Hooks**: Never call hooks conditionally (must be at top level)
+
+### Accessibility Requirements
+- All interactive elements must have ARIA labels
+- Keyboard navigation must work
+- Focus management for modals/dialogs
+- Color contrast meets WCAG AA standards
+- At least one Playwright test per complex component verifying accessibility
+
+### Example Component
+```typescript
+/**
+ * LeadCard component displays a lead summary for providers.
+ * 
+ * @param lead - Lead object with id, title, description, price
+ * @param onAccept - Callback when provider accepts the lead
+ * @param onReject - Callback when provider rejects the lead
+ */
+interface LeadCardProps {
+  lead: {
+    id: string
+    title: string
+    description: string
+    price: number
+  }
+  onAccept: (leadId: string) => void
+  onReject: (leadId: string) => void
+}
+
+export function LeadCard({ lead, onAccept, onReject }: LeadCardProps) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{lead.title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p>{lead.description}</p>
+        <p className="font-bold">${lead.price}</p>
+      </CardContent>
+      <CardFooter className="gap-2">
+        <Button 
+          onClick={() => onAccept(lead.id)}
+          aria-label={`Accept lead: ${lead.title}`}
+        >
+          Accept
+        </Button>
+        <Button 
+          variant="outline" 
+          onClick={() => onReject(lead.id)}
+          aria-label={`Reject lead: ${lead.title}`}
+        >
+          Reject
+        </Button>
+      </CardFooter>
+    </Card>
+  )
+}
+```
+
+## Database Rules
+
+### Query Safety
+- **Always use parameterized queries** (never string concatenation)
+- Wrap financial operations in **transactions**
+- Use `DECIMAL` or `NUMERIC` for money (never `FLOAT`)
+- Include `created_at`, `updated_at` on all tables
+- Use **UUIDs** for primary keys
+- Add **indexes** for foreign keys and frequently queried columns
+- Use **soft deletes** for important data (add `deleted_at` column)
+
+### Transaction Pattern
+```typescript
+import { sql } from '@/lib/db'
+
+/**
+ * Assigns a lead to a provider and deducts balance atomically.
+ * 
+ * @throws {InsufficientBalanceError} When provider balance is too low
+ * @throws {DatabaseError} When transaction fails
+ */
+export async function assignLeadToProvider(
+  leadId: string,
+  providerId: string,
+  subscriptionId: string,
+  leadPrice: number
+): Promise<void> {
+  await sql.begin(async (tx) => {
+    // Deduct balance with optimistic locking
+    const [subscription] = await tx`
+      UPDATE provider_subscriptions
+      SET balance = balance - ${leadPrice},
+          last_received_at = NOW()
+      WHERE id = ${subscriptionId} 
+        AND provider_id = ${providerId}
+        AND balance >= ${leadPrice}
+      RETURNING balance
+    `
+
+    if (!subscription) {
+      throw new InsufficientBalanceError('Insufficient balance')
+    }
+
+    // Create ledger entry
+    await tx`
+      INSERT INTO provider_ledger (
+        provider_id, subscription_id, lead_id,
+        transaction_type, amount, balance_after
+      ) VALUES (
+        ${providerId}, ${subscriptionId}, ${leadId},
+        'lead_purchase', ${-leadPrice}, ${subscription.balance}
+      )
+    `
+
+    // Create assignment
+    await tx`
+      INSERT INTO lead_assignments (lead_id, provider_id, subscription_id)
+      VALUES (${leadId}, ${providerId}, ${subscriptionId})
+    `
+  })
+}
+```
+
+## API Route Rules
+
+### Response Structure
+- **Success**: `{ success: true, data: any }`
+- **Error**: `{ success: false, error: string, details?: any }`
+- Use proper HTTP status codes:
+  - `200`: Success (GET, PATCH, DELETE)
+  - `201`: Created (POST)
+  - `400`: Bad Request (validation error)
+  - `401`: Unauthorized (missing/invalid token)
+  - `403`: Forbidden (insufficient permissions)
+  - `404`: Not Found
+  - `409`: Conflict (duplicate resource)
+  - `422`: Unprocessable Entity (semantic error)
+  - `429`: Too Many Requests (rate limit)
+  - `500`: Internal Server Error
+
+### Protected Route Pattern
+```typescript
+import { NextRequest, NextResponse } from 'next/server'
+import { verifyToken } from '@/lib/jwt'
+import { z } from 'zod'
+
+const requestSchema = z.object({
+  // Define schema
+})
+
+/**
+ * GET /api/leads
+ * Returns leads assigned to the authenticated provider.
+ * 
+ * @requires Authentication (JWT token)
+ * @requires Role: provider
+ */
+export async function GET(request: NextRequest) {
+  try {
+    // Verify authentication
+    const token = request.headers.get('authorization')?.replace('Bearer ', '')
+    if (!token) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const payload = verifyToken(token)
+
+    // Verify role
+    if (payload.role !== 'provider') {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden' },
+        { status: 403 }
+      )
+    }
+
+    // Business logic
+    const leads = await getProviderLeads(payload.userId)
+
+    return NextResponse.json({ success: true, data: leads })
+
+  } catch (error) {
+    console.error('API error:', error)
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+```
+
+### Input Validation
+- Use **Zod** for all input validation
+- Validate in API routes before business logic
+- Return detailed validation errors (400 status)
+
+## Security Rules
+
+### Authentication & Authorization
+- JWT tokens with 7-day expiry
+- bcrypt password hashing (cost factor 10)
+- Rate limiting on auth endpoints (10 requests/minute)
+- No sensitive data in logs or error messages
+- Verify JWT on all protected routes
+- Check role/permissions before operations
+
+### Data Protection
+- HTTPS only in production
+- Environment variables for all secrets
+- SQL injection prevention (parameterized queries)
+- XSS prevention (React escaping + CSP headers)
+- CSRF protection for state-changing operations
+
+### Payment Security
+- Stripe handles card data (PCI compliant)
+- Webhook signature verification
+- Idempotency keys for payments
+- Never store card numbers
+
+## Performance Rules
+
+### Database Optimization
+- Indexes on foreign keys and frequently queried columns
+- Connection pooling (max 10 connections)
+- Use `EXPLAIN ANALYZE` for slow queries
+- Pagination for list endpoints (default 20 items)
+
+### Caching Strategy
+- Redis for session data (if needed)
+- Redis for BullMQ job queues
+- Browser caching for static assets
+- No premature optimization
+
+### API Performance
+- Lazy loading for large datasets
+- Debouncing for search inputs (300ms)
+- Optimistic UI updates where appropriate
+
+## CI/CD with GitHub Actions
+
+### Required Workflows
+1. **Lint & Type Check** (on every push)
+2. **Unit Tests** (on every push)
+3. **API Tests** (on every push)
+4. **E2E Tests** (on PR to main)
+5. **Build** (on PR to main)
+6. **Deploy** (on merge to main)
+
+### Example Workflow Structure
+- Use GitHub Actions
+- Run tests in parallel where possible
+- Use Docker services for Postgres + Redis in CI
+- Cache node_modules for faster builds
+- Upload test coverage reports
+- Upload Playwright reports as artifacts
+
+## Environment Variables
+Required in `.env.local`:
+```bash
+# Database
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/findmeahotlead
+
+# Auth
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+
+# Payments
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Email (Production)
+AWS_SES_REGION=us-east-1
+AWS_SES_ACCESS_KEY_ID=...
+AWS_SES_SECRET_ACCESS_KEY=...
+AWS_SES_FROM_EMAIL=noreply@findmeahotlead.com
+
+# Storage
+S3_ENDPOINT=https://truenas.local:9000  # TrueNAS S3 API
+S3_ACCESS_KEY_ID=...
+S3_SECRET_ACCESS_KEY=...
+S3_BUCKET=fmhl-uploads
+WASABI_ENDPOINT=https://s3.wasabisys.com  # Backup
+WASABI_ACCESS_KEY_ID=...
+WASABI_SECRET_ACCESS_KEY=...
+WASABI_BUCKET=fmhl-backup
+
+# Redis
+REDIS_URL=redis://localhost:6379
+
+# App
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NODE_ENV=development
+```
+
+## Common Patterns to Avoid
+
+### ❌ Don't
+- Use `any` without justification
+- Store money as `FLOAT`
+- Build auth from scratch without understanding security
+- Use EAV or pure JSONB for structured data
+- Premature optimization
+- Over-engineering for scale
+- Skip input validation
+- Expose internal IDs in URLs (use slugs where appropriate)
+- Use MongoDB for financial data
+- Commit secrets to Git
+- Write tests that depend on external network
+- Write flaky tests
+- Use `var` (use `const` or `let`)
+- Mutate function parameters
+- Use nested ternaries (use if/else or early returns)
+- Use magic numbers/strings (use named constants)
+- Write functions with side effects without clear naming
+- Use `console.log` in production (use proper logging)
+
+### ✅ Do
+- Use strict TypeScript
+- Use transactions for financial operations
+- Write comprehensive tests (80%+ coverage)
+- Document public APIs with JSDoc
+- Use feature-based folder structure
+- Keep components simple and testable
+- Use Zod for validation
+- Log errors with context
+- Use parameterized queries
+- Follow conventional commits
+- Write deterministic tests
+- Mock external dependencies in tests
+- Use `const` by default, `let` only when reassignment needed
+- Use early returns to reduce nesting
+- Extract magic numbers/strings into named constants
+- Write pure functions when possible
+- Use proper logging library (not console.log)
+
+## When Suggesting Code
+1. Always include error handling
+2. Add TypeScript types
+3. Include JSDoc for public functions
+4. Include validation (Zod schemas)
+5. Consider edge cases
+6. Add comments for complex logic
+7. Follow existing patterns in codebase
+8. Suggest tests when appropriate
+9. Consider performance implications
+10. Think about security
+11. Use descriptive variable names
+12. Keep functions small and focused
+13. Use early returns to reduce nesting
+14. Consider accessibility (for UI components)
+15. Follow naming conventions
+
+## Code Review Checklist
+Before committing, verify:
+- [ ] TypeScript strict mode passes
+- [ ] ESLint passes (no warnings)
+- [ ] Prettier formatted
+- [ ] Tests written and passing (80%+ coverage)
+- [ ] JSDoc added for public APIs
+- [ ] No secrets in code
+- [ ] Error handling implemented
+- [ ] Input validation added
+- [ ] Database queries use transactions where needed
+- [ ] API returns consistent structure
+- [ ] Accessibility requirements met (if UI)
+- [ ] No `console.log` statements (use proper logging)
+- [ ] No magic numbers/strings (use named constants)
+- [ ] Functions are small and focused (<50 lines)
+- [ ] No `any` types without justification
+- [ ] Proper error messages (user-friendly)
+- [ ] Performance considered (no N+1 queries, proper indexes)
+- [ ] Security considered (input validation, auth checks)
