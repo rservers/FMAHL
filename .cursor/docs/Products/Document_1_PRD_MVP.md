@@ -1,5 +1,5 @@
-# Find Me a Hot Lead  
-## Product Requirements Document — MVP (Document 1)
+# Find Me a Hot Lead
+## Product Requirements Document — MVP (Document 1, v1.1)
 
 ---
 
@@ -53,7 +53,7 @@ The following are explicitly **not part of MVP** (but must not be blocked by MVP
 ## 4. Supported Niches (MVP)
 
 ### 4.1 VPS Hosting  
-### 4.2 Dedicated Servers  
+### 4.2 Dedicated Servers
 
 Requirements:
 - Each niche has:
@@ -93,7 +93,7 @@ Requirements:
 ### 6.1 Lead Submission
 - Leads must be submitted via API.
 - Public landing pages consume the same API securely without exposing internal/integration APIs.
-- Leads must confirm lead submission (link via confirmation email)
+- Leads must confirm submission via confirmation email.
 - Each lead must capture:
   - Required: email
   - Optional: phone
@@ -103,25 +103,33 @@ Requirements:
   - Partner ID (nullable, future use)
   - Timestamp
 
-### 6.2 Lead Statuses
-- Pending Confirmation 
+### 6.2 Lead Statuses (MVP)
+
+**Lead-level statuses:**
+- Pending Confirmation
 - Pending Approval
 - Approved
 - Rejected
 - Distributed
 - Bad Lead (Global)
-- Refunded
+
+> **Important:** Refunded is **not** a Lead status. Refunds apply at the Lead Assignment (per-provider) level.
 
 ---
 
-## 7. Lead Approval
+## 7. Lead Approval & Confirmation
 
-- A lead cannot be approved or distributed until the end user has confirmed their submission via the confirmation email. Until that happens, the lead will remain in Pending Confirmation status where it can be rejected.
-- All leads require **manual admin approval**.
+- A lead cannot be approved or distributed until the end user has confirmed their submission via the confirmation email.
+- Until confirmed, the lead remains in **Pending Confirmation** and may be rejected.
+- All confirmed leads require **manual admin approval**.
 - Approved leads are automatically distributed.
 - Rejected leads are never distributed.
-- Global Bad Lead status refunds all assigned providers.
-- Refunded leads are not Global (in case of filter/criteria mismatch)
+
+**Post-distribution rules:**
+- Once a lead is distributed, it cannot be rejected.
+- Post-distribution invalidation must occur via:
+  - Global Bad Lead, or
+  - Per–Service Provider refund
 
 ---
 
@@ -129,6 +137,12 @@ Requirements:
 
 ### 8.1 Definition
 Competition Levels represent **how many providers receive a lead** and **how much each provider pays per lead**.
+
+Competition Levels define:
+- How many Service Providers receive a lead
+- How much each Service Provider pays per lead
+
+Competition Levels are not merely pricing tiers; they are a market mechanism that balances fairness, exclusivity, and budget accessibility by controlling how many providers compete for each lead.
 
 ### 8.2 Configuration (Per Niche)
 Each Competition Level includes:
@@ -158,42 +172,43 @@ Each Competition Level includes:
 ### Behavior
 - A provider only receives a lead if all filters match.
 - Filters are evaluated during distribution.
-- Filter changes apply only to leads that have not yet been distributed. Distributed leads are not affected by filter updates. Pending leads will use the most recently saved filter configuration at the time of distribution.
-- All filter changes are logged and visible to both the Service Provider (per Competition Level) and Admins via the audit log.
+- Filter changes apply only to leads that have not yet been distributed.
+- Pending leads use the most recently saved filters at the time of distribution.
+- Distributed leads are never re-evaluated.
+- All filter changes are logged and visible to both Service Providers (per Competition Level) and Admins.
 
 ---
 
 ## 10. Lead Distribution Logic
 
 ### 10.1 Distribution Rules
-- Distribution starts at the highest applicable Competition Level and then round-robin across Competition Levels with each subsequent lead.
-- Uses round-robin within each level.
+- Distribution starts at a rotating Competition Level (lead-to-lead rotation).
 - Providers must:
   - Match filters
   - Have sufficient balance
   - Not have already received the lead
-- If max distribution is not met:
-  - Cascade to the next Competition Level.
+- If max distribution is not met at a Competition Level:
+  - Cascade to the next level.
 - Distribution is **one-time only**.
 
-### 10.2 Charging
-- Provider is charged immediately upon assignment.
+### 10.2 Fairness Model
+
+Lead distribution uses a **two-dimensional fairness model**:
+
+1. **Within a Competition Level (Provider Fairness)**  
+   - Eligible providers are ordered by **least recently served**.
+   - The provider who has gone the longest without receiving a lead is prioritized.
+
+2. **Across Competition Levels (Lead-to-Lead Fairness)**  
+   - Each new lead rotates the starting Competition Level.
+   - Prevents higher-priced levels from always receiving first access.
+
+This ensures fairness even when provider eligibility varies due to filters.
+
+### 10.3 Charging
+- Providers are charged immediately upon assignment.
 - Charges are ledgered.
-- No lead is delivered without successful charge.
-
-### 10.3 Round-Robin Behavior
-
-Lead distribution follows a two-dimensional round-robin model to ensure fairness across both service providers and Competition Levels:
-
-1. **Within a Competition Level (Provider Rotation)**  
-   - Service Providers subscribed to the same Competition Level are selected using round-robin distribution.
-   - This ensures equal opportunity among providers at the same Competition Level.
-   - Provider rotation state is persisted between leads.
-
-2. **Across Competition Levels (Lead-to-Lead Rotation)**  
-   - Each new lead rotates the *starting Competition Level* used for distribution.
-   - This prevents higher Competition Levels from always receiving first priority and ensures fair exposure across all subscribed levels over time.
-   - Cascading rules still apply if the maximum distribution count is not met within a given Competition Level.
+- No lead is delivered without a successful charge.
 
 ---
 
@@ -203,16 +218,16 @@ Lead distribution follows a two-dimensional round-robin model to ensure fairness
 - Supported methods:
   - Stripe
   - PayPal
-- Providers pre-fund their balance.
+- Providers pre-fund their account balance.
 
 ### 11.2 Balance Rules
 - Providers with insufficient balance cannot receive leads.
-- Providers with balance below lead price are auto-deactivated and will receive an email notification. 
-- Auto-reactivate when balance ≥ minimum required (Service Provider tops up their balance) and will receive an email notification of Competition Level(s) reactivated.
-- Providers can set a low-balance alert threshold and will receive an email notification when that balance is met or surpassed.
+- Providers whose balance drops below the minimum required for subscribed Competition Levels are auto-deactivated.
+- When balance is restored, eligible Competition Levels are auto-reactivated and the provider is notified.
+- Providers can configure low-balance alert thresholds.
 
 ### 11.3 Ledger
-- All transactions are recorded:
+- All financial transactions are recorded:
   - Deposits
   - Charges
   - Refunds
@@ -221,34 +236,38 @@ Lead distribution follows a two-dimensional round-robin model to ensure fairness
 ---
 
 ## 12. Bad Lead Handling
-Refund classification and resolution is a manual administrative decision. The system does not automatically infer refund eligibility based on reason alone; administrators are responsible for selecting the appropriate outcome and documenting their decision.
 
-### 12.1 Provider-Initiated
-- Providers may submit a bad lead request.
-- Request includes:
+Refund classification and resolution is a **manual administrative decision**.
+
+### 12.1 Provider-Initiated Requests
+- Providers may submit a bad lead request with:
   - Reason
   - Optional notes
-- Admin reviews:
-  - Approve → refund issued
-  - Reject → must include memo, refund this Service Provider for this lead and update the status to Refunded.
-  - Bad Lead (Global) → must issue memo, update lead status to Bad Lead globally and issue a refund to all Service Providers that received this lead.
+- Providers may only submit a bad lead request for Distributed leads
+
+Admin outcomes:
+- **Approve Refund:** refund this provider for this lead
+- **Reject Request:** must include admin memo; no refund
+- **Global Bad Lead:** mark lead as globally invalid and refund all providers
 
 ### 12.2 Admin-Initiated
-- Admin may mark a lead as globally bad.
-- All providers receive refunds automatically.
-- Status updated to Bad Lead
+- Admin may mark a lead as Global Bad Lead at any time after distribution.
+- All providers receive refunds automatically and notified of the lead change and refund they've received.
+- All pending Provider-Initiated Requests related to this lead will be approved (Global Bad Lead), but only refunded once (if they've received a refund for this lead already then they wouldn't receive an additional refund, but will receive a refund if they haven't received a refund already). Any existing **Approve Refund** for this lead will be updated to **Global Bad Lead** and will not receive any additional refund, given they've already received a refund for this lead.
+- All pending Provider-Initiated Requests related to this lead will be approved (Global Bad Lead), but only refunded once (if they've received a refund for this lead already then they wouldn't receive an additional refund, but will receive a refund if they haven't received a refund already). Any existing **Approve Refund** for this lead will be updated to **Global Bad Lead** and will not receive any additional refund, given they've already received a refund for this lead.
 
 ---
 
 ## 13. Notifications & Email
 
-### Requirements
 - Email notifications for:
+  - Lead confirmation
   - New lead assigned
-  - Lead rejected (Bad Lead) / refunded
+  - Lead rejected / refunded
   - Low balance alerts
-- Email read tracking must be recorded (open tracking). Email open tracking is informational and does not alone determine lead validity or refund eligibility.
-- Email templates configurable by admin.
+- Email open tracking is recorded for informational purposes only.
+- Open tracking must not determine refund eligibility.
+- Email templates are admin-configurable.
 - Email submitted by End Users must be valid
 
 ---
@@ -257,40 +276,33 @@ Refund classification and resolution is a manual administrative decision. The sy
 
 Admins must be able to:
 - Approve/reject leads
-- View lead activity - emails/nofitications, distribution breakdown, finances
-- Add and manage Service Providers 
-- Configure niches and forms (including fields and field options/type)
-- Configure Competition Levels and pricing including viewing 
+- View lead distribution, notifications, and financials
+- Add and manage Service Providers
+- Configure niches and forms
+- Configure Competition Levels and pricing
 - Handle disputes and refunds
-- Credit/debit provider balances and manage finances
-- View revenue and lead reports
+- Credit/debit provider balances
+- View revenue and lead analytics
 - View audit logs
 
-### 14.1 Admin Audit & Change Logs
+### 14.1 Audit & Change Logs
 
-Admins must be able to view an audit log of all critical system changes to support transparency, dispute resolution, and operational accountability.
+Audit logs must include:
+- Provider profile changes
+- Subscription and filter changes
+- Competition Level configuration changes
+- Manual financial actions
+- Lead state changes
 
-The audit log must include, at a minimum:
-
-- Changes to Service Provider profiles
-- Changes to Service Provider Competition Level subscriptions
-- Changes to Service Provider filters per Competition Level
-- Changes to Competition Level configuration (pricing, caps, order, status)
-- Manual financial actions (credits, debits, refunds)
-- Lead status changes (approval, rejection, global bad lead)
-
-Each log entry must record:
-- Entity type (e.g., Provider, Competition Level, Lead)
-- Entity identifier
-- Action performed
-- Previous value(s)
-- New value(s)
-- Actor (admin user)
+Each log entry records:
+- Entity type & ID
+- Action
+- Previous and new values
+- Actor
 - Timestamp
-- Optional admin note or memo
+- Optional admin-only memo
 
-Audit logs are read-only and cannot be modified or deleted.
-
+Logs are immutable.
 
 ---
 
@@ -299,13 +311,11 @@ Audit logs are read-only and cannot be modified or deleted.
 Providers must be able to:
 - View assigned leads
 - See Competition Level per lead
-- Configure Competition Level subscriptions
-- Manage filters per subscription
+- Manage subscriptions and filters
 - View balances and ledger
 - Submit bad lead requests
+- View filter change history per Competition Level
 - Configure notifications
-- Service Providers must be able to view a history of filter changes per Competition Level, including timestamps, to support transparency and dispute resolution.
-
 
 Providers must NOT see:
 - Other providers
@@ -317,18 +327,17 @@ Providers must NOT see:
 
 End users must be able to:
 - Submit a lead via public form
-- Receive confirmation email and confirm lead submission via confirmation link
-- Be contacted by providers directly via email
+- Confirm submission via email link
+- Be contacted directly by providers
 
 ---
 
 ## 17. Reporting & Analytics (MVP)
 
 ### Admin
-- Leads submitted
-- Leads approved/rejected
-- Revenue per niche, per lead, per Service Provider, and per Competition Level
-- Refund rate
+- Leads submitted / approved / rejected
+- Revenue per lead, niche, provider, Competition Level
+- Refund rates
 - Service Provider activity
 
 ### Providers
@@ -347,23 +356,23 @@ CSV export required.
 - Deterministic distribution
 - Financial consistency
 - Full audit trail
-- Scalable to multiple niches
+- Multi-niche scalability
 
 ---
 
 ## 19. Success Criteria (MVP)
 
-- Leads are distributed fairly and correctly
+- Fair and correct lead distribution
 - Providers only pay for delivered leads
-- Admin can manage disputes and finances
-- Platform supports VPS & Servers end-to-end
-- No architectural blockers for Phase 2+
+- Admins can manage disputes and finances
+- VPS & Dedicated Servers supported end-to-end
+- No blockers for Phase 2+
 
 ---
 
 ## 20. Dependencies
 
-- Payment processors (Stripe, PayPal)
+- Stripe & PayPal
 - Email delivery service
 - Hosting & database infrastructure
 
@@ -374,6 +383,7 @@ CSV export required.
 - Document 0: Product Overview & Context
 - Document 2: PRD — Phase 2 (Partners & Growth)
 - Document 3: PRD — Phase 3 (CRM & Ecosystem)
-- Document 4: Technical Architecture & API Design
+- Document 4: Technical Architecture
 
 ---
+
