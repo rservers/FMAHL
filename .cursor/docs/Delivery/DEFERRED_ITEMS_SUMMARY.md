@@ -268,6 +268,147 @@ This document tracks all deferred items identified during epic reviews. Each ite
 
 ---
 
+## From EPIC 05 (Filters & Eligibility)
+
+### No Deferred Items ✅
+
+All MVP requirements for EPIC 05 were implemented. P3 future enhancements noted in review:
+- Advanced filtering (nested AND/OR groups)
+- Filter templates
+- Filter suggestions (AI-powered)
+- Filter analytics
+- Bulk filter operations
+
+**Status:** All are out of MVP scope, to be considered post-launch based on user feedback.
+
+---
+
+## From EPIC 07 (Billing & Payments)
+
+### 1. Balance Reconciliation Job (P3)
+**Target Epic:** EPIC 12 - Observability & Ops  
+**Status:** 🔴 Not Started  
+**Effort:** 0.5 hours
+
+**Context:** Provider cached balance should be periodically reconciled against the immutable ledger to detect any discrepancies.
+
+**Recommendation:**
+- Implement nightly cron job (3 AM)
+- Compare `providers.balance` vs `SUM(provider_ledger.amount)` for all providers
+- Use tolerance of 0.01 for floating point comparison
+- Log discrepancies with severity: warning
+- Alert if discrepancies > 1.00 USD
+- Auto-correct discrepancies if within tolerance
+
+**Implementation:**
+- Create job in `apps/worker/src/jobs/balance-reconciliation.ts`
+- Use `calculateBalance()` from ledger service
+- Schedule via BullMQ repeat jobs
+- Add monitoring metrics
+
+**Expected Impact:**
+- Early detection of balance calculation bugs
+- Increased confidence in billing accuracy
+- Compliance for financial audits
+
+---
+
+### 2. Payment Retry Logic (P3)
+**Target Epic:** Future (post-MVP)  
+**Status:** 🔴 Not Started  
+**Effort:** 1.0 hour
+
+**Context:** Failed payments (status='failed') are not automatically retried. Providers must manually retry deposits.
+
+**Recommendation:**
+- Automatic retry for transient failures (network, gateway timeout)
+- Max 3 retries with exponential backoff
+- Do not retry for permanent failures (invalid card, insufficient funds)
+- Notify provider after final retry failure
+
+**Implementation:**
+- Add retry logic in payment service
+- Use BullMQ job retries
+- Distinguish between transient and permanent failures
+- Add retry count to payments table
+
+**Note:** Low priority as providers can manually retry.
+
+---
+
+### 3. Multi-Currency Support (P3)
+**Target Epic:** Future (post-MVP)  
+**Status:** 🔴 Not Started  
+**Effort:** 2.0 hours
+
+**Context:** System currently only supports USD. Schema has `currency` field prepared for future expansion.
+
+**Recommendation:**
+- Support EUR, GBP, CAD at minimum
+- Use currency conversion service (e.g., exchangeratesapi.io)
+- Store amounts in original currency + USD equivalent
+- Update all displays to show currency symbol
+- Add currency selection in deposit flow
+
+**Implementation:**
+- Add currency conversion service
+- Update all amount displays to include currency
+- Add currency selector to deposit UI
+- Update validation to support multiple currencies
+- Update email templates with currency context
+
+**Note:** Schema already supports this. Deferred until international expansion.
+
+---
+
+### 4. Auto-Topup Execution (P3)
+**Target Epic:** Future (post-MVP)  
+**Status:** 🔴 Not Started  
+**Effort:** 2.0 hours
+
+**Context:** Providers table includes auto-topup fields (`auto_topup_enabled`, `auto_topup_threshold`, `auto_topup_amount`). Execution logic not implemented.
+
+**Recommendation:**
+- Implement in balance-alerts service
+- Check auto-topup settings during low-balance check
+- Automatically initiate deposit when threshold crossed
+- Requires stored payment method (Stripe Customer ID)
+- Send confirmation email after auto-topup
+
+**Implementation:**
+- Extend `checkLowBalanceAlert()` in balance-alerts service
+- Use Stripe Payment Intents API with stored payment method
+- Add `TOPUP_INITIATED` and `TOPUP_COMPLETED` audit actions
+- Update email templates
+- Add UI for providers to configure auto-topup
+
+**Note:** Requires stored payment methods, which is out of MVP scope.
+
+---
+
+### 5. PayPal Webhook Verification Enhancement (P3)
+**Target Epic:** Future (post-MVP)  
+**Status:** 🔴 Not Started  
+**Effort:** 1.0 hour
+
+**Context:** PayPal webhook verification is simplified for MVP. Full signature verification not implemented.
+
+**Recommendation:**
+- Implement full PayPal webhook signature verification
+- Use PayPal SDK's verification helpers
+- Verify webhook origin (PayPal IPs)
+- Add webhook signing certificate validation
+
+**Implementation:**
+- Update `verifyPayPalWebhook()` in paypal gateway
+- Use PayPal SDK verification methods
+- Add certificate caching
+- Add webhook ID validation
+
+**Note:** Current simplified verification is acceptable for MVP. Enhanced security for production.
+
+---
+
 ## Priority Summary
 
 ### P1 (Critical for MVP)
@@ -284,18 +425,27 @@ This document tracks all deferred items identified during epic reviews. Each ite
 - 🔴 Redis caching for competition levels (EPIC 11) - 4 hours
 - 🔴 Template management UI (EPIC 11) - 8 hours
 - 🔴 Scheduled subscription reactivation job (EPIC 12) - 2 hours
+- 🔴 Balance reconciliation job (EPIC 12) - 0.5 hours
+- 🔴 Payment retry logic (Future) - 1 hour
+- 🔴 Multi-currency support (Future) - 2 hours
+- 🔴 Auto-topup execution (Future) - 2 hours
+- 🔴 PayPal webhook enhancement (Future) - 1 hour
 
 ### Out of MVP Scope
 - Batch scheduling (Future)
 - Webhooks for external systems (Future)
+- EPIC 05 advanced filtering features (Future - based on user feedback)
+- Multi-currency support (Future - international expansion)
+- Auto-topup (Future - requires stored payment methods)
+- Payment retry logic (Future - low priority, manual retry available)
 
 ---
 
 ## Total Deferred Effort
 
 **P2 Items:** 6 hours  
-**P3 Items:** 23 hours  
-**Total:** 29 hours (~3.5 days)
+**P3 Items:** 29.5 hours  
+**Total:** 35.5 hours (~4.5 days)
 
 ---
 
@@ -381,5 +531,6 @@ grep -A 20 "⚠️ Deferred Items" .cursor/docs/Delivery/Epic_11_Reporting_Analy
 
 **Maintained By:** Development Team  
 **Last Reviewed:** Jan 4, 2026  
-**Next Review:** Before EPIC 05
+**Last Updated:** Jan 4, 2026 (Added EPIC 05 & EPIC 07 items)  
+**Next Review:** Before EPIC 06
 
