@@ -167,7 +167,7 @@ Week 5-6: Phase 6
 The **critical path** to a working MVP (lead → distribution → provider):
 
 ```
-EPIC 01 ✅ → EPIC 10 → EPIC 02 → EPIC 04 → EPIC 05 → EPIC 07 → EPIC 06
+EPIC 01 ✅ → EPIC 10 ✅ → EPIC 02 ✅ → EPIC 03 ✅ → EPIC 04 → EPIC 05 → EPIC 07 → EPIC 06
 ```
 
 **Minimum viable flow:**
@@ -175,9 +175,10 @@ EPIC 01 ✅ → EPIC 10 → EPIC 02 → EPIC 04 → EPIC 05 → EPIC 07 → EPIC
 2. Provider subscribes to competition level (EPIC 04)
 3. Provider adds balance (EPIC 07)
 4. Provider sets filters (EPIC 05)
-5. End user submits lead (EPIC 02)
-6. Lead confirmed via email (EPIC 10)
-7. Lead distributed to eligible providers (EPIC 06)
+5. End user submits lead (EPIC 02 ✅)
+6. Lead confirmed via email (EPIC 10 ✅)
+7. Admin approves lead (EPIC 03 ✅)
+8. Lead distributed to eligible providers (EPIC 06)
 
 ---
 
@@ -227,11 +228,11 @@ After EPIC 10, proceed with **EPIC 04** and **EPIC 07** (can be parallelized).
 | 1 | 01 | Platform Foundation | ✅ Done | Jan 3, 2026 | Jan 3, 2026 |
 | 2 | 10 | Email Infrastructure | ✅ Done | Jan 3, 2026 | Jan 4, 2026 |
 | 3 | 02 | Lead Intake & Confirmation | ✅ Done | Jan 4, 2026 | Jan 4, 2026 |
-| 3 | 03 | Admin Lead Review | ⬜ **NEXT** | | |
+| 3 | 03 | Admin Lead Review | ✅ Done | Jan 4, 2026 | Jan 4, 2026 |
 | 2 | 04 | Competition Levels | ⬜ Pending | | |
 | 2 | 07 | Billing & Payments | ⬜ Pending | | |
 | 3 | 05 | Filters & Eligibility | ⬜ Pending | | |
-| 4 | 06 | Distribution Engine | ⬜ Pending | | |
+| 4 | 06 | Distribution Engine | ⬜ **NEXT** | | |
 | 5 | 08 | Provider Dashboard | ⬜ Pending | | |
 | 5 | 09 | Bad Lead & Refunds | ⬜ Pending | | |
 | 6 | 11 | Reporting & Analytics | ⬜ Pending | | |

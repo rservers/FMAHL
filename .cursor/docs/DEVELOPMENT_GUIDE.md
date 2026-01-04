@@ -213,6 +213,9 @@ CREATE TABLE users (
 
 ### EPIC 10: Notifications & Email ✅
 
+**Implementation Plan:** `.cursor/docs/Delivery/EPIC_10_IMPLEMENTATION_PLAN.md`  
+**Review:** `.cursor/docs/Delivery/EPIC_10_REVIEW.md`
+
 **Key Endpoints**
 ```
 POST /api/v1/auth/register              # sends email_verification
@@ -228,7 +231,69 @@ GET /api/v1/admin/email-events          # event log
 **Local Email UI**
 - MailHog: http://localhost:8025
 
+### EPIC 02: Lead Intake & Confirmation ✅
+
+**Implementation Plan:** `.cursor/docs/Delivery/EPIC_02_IMPLEMENTATION_PLAN.md`  
+**Review:** `.cursor/docs/Delivery/EPIC_02_FINAL_REVIEW.md`
+
+**Key Endpoints**
+```
+POST /api/v1/leads                      # submit lead
+GET  /api/v1/leads/confirm              # confirm via token
+POST /api/v1/leads/:id/resend-confirmation
+GET  /api/v1/niches/:id/form-schema     # get niche form
+```
+
+**UI Pages**
+```
+/confirm/success          # confirmation success
+/confirm/expired          # token expired
+/confirm/invalid          # invalid token
+/confirm/already-confirmed
+```
+
 **What was built:**
+- Lead submission with niche-specific form validation
+- Email confirmation with secure tokens (32-byte, SHA-256, 24h expiry)
+- Lead status flow: `pending_confirmation` → `pending_approval`
+- Attribution tracking (UTM params, referrer, partner)
+- Resend confirmation (max 3, 5min cooldown)
+- Dynamic form schema validation
+- Confirmation UI pages
+
+### EPIC 03: Admin Lead Review & Approval ✅
+
+**Implementation Plan:** `.cursor/docs/Delivery/EPIC_03_IMPLEMENTATION_PLAN.md`  
+**Review:** `.cursor/docs/Delivery/EPIC_03_REVIEW.md`
+
+**Key Endpoints**
+```
+GET  /api/v1/admin/leads                # list leads (filtered)
+GET  /api/v1/admin/leads/stats          # queue statistics
+GET  /api/v1/admin/leads/:id            # lead details
+POST /api/v1/admin/leads/:id/approve    # approve lead
+POST /api/v1/admin/leads/:id/reject     # reject lead
+POST /api/v1/admin/leads/bulk-approve   # bulk approve (max 50)
+POST /api/v1/admin/leads/bulk-reject    # bulk reject (max 50)
+```
+
+**UI Pages**
+```
+/dashboard/leads          # admin lead queue
+/dashboard/leads/:id      # lead detail + actions
+```
+
+**What was built:**
+- Admin lead queue with filtering and pagination
+- Lead detail view with full context
+- Approve/reject actions with optional notes
+- Bulk operations (up to 50 leads)
+- Queue statistics (pending count, avg time, etc.)
+- Optional email notifications (lead_approved, lead_rejected)
+- Lead status flow: `pending_approval` → `approved` or `rejected`
+- Admin notes for internal context
+
+**What was built (EPIC 01):**
 - Database schema with users, audit_log, and all enums
 - JWT authentication with 7-day tokens
 - Password hashing (bcrypt cost 12) with validation
