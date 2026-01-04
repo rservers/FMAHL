@@ -4,6 +4,8 @@
 
 This document outlines the strategic order for implementing all MVP epics based on dependencies, business value, and technical efficiency.
 
+**⚠️ IMPORTANT:** Before starting any epic, check the **Deferred Items Tracker** (`.cursor/docs/Delivery/DEFERRED_ITEMS_SUMMARY.md`) to see if there are deferred items assigned to that epic from previous epic reviews.
+
 ---
 
 ## Dependency Graph
@@ -167,7 +169,7 @@ Week 5-6: Phase 6
 The **critical path** to a working MVP (lead → distribution → provider):
 
 ```
-EPIC 01 ✅ → EPIC 10 ✅ → EPIC 02 ✅ → EPIC 03 ✅ → EPIC 04 → EPIC 05 → EPIC 07 → EPIC 06
+EPIC 01 ✅ → EPIC 10 ✅ → EPIC 02 ✅ → EPIC 03 ✅ → EPIC 04 ✅ → EPIC 05 → EPIC 07 → EPIC 06
 ```
 
 **Minimum viable flow:**
@@ -184,59 +186,45 @@ EPIC 01 ✅ → EPIC 10 ✅ → EPIC 02 ✅ → EPIC 03 ✅ → EPIC 04 → EPIC
 
 ## Next Epic Recommendation
 
-Based on the analysis, the recommended next epic is:
+**Current Status:** EPIC 01, 10, 02, 03, 04 are complete ✅
 
-### Option A: EPIC 10 (Email Infrastructure)
-**Pros:**
-- Lightweight infrastructure (~2 days)
-- Unblocks EPIC 02 (lead confirmation)
-- Completes the auth flow (email verification)
-- BullMQ worker already scaffolded
+### Next Epic: EPIC 05 (Filters & Eligibility)
 
-### Option B: EPIC 04 (Competition Levels)
-**Pros:**
-- Core business model
-- Defines provider subscription structure
-- No external dependencies
-- Can be done in parallel with EPIC 10
+**Why EPIC 05:**
+- Depends on EPIC 01 ✅ and EPIC 04 ✅ (both complete)
+- Required for EPIC 06 (Distribution Engine)
+- Defines provider eligibility rules
+- ~2-3 days effort
 
-### Option C: EPIC 07 (Billing)
-**Pros:**
-- Critical for distribution gating
-- Stripe/PayPal integration
-- Can be done in parallel with others
+**Before Starting EPIC 05:**
+1. ✅ Check deferred items tracker - No deferred items for EPIC 05
+2. 🔴 **OPTIONAL:** Complete EPIC 01 deferred item (admin lead rate limiting - 2 hours)
+3. ✅ Review EPIC 05 specification
 
----
-
-## My Recommendation
-
-**Start with EPIC 10 (Email Infrastructure)** because:
-1. It's the smallest of the three (~2 days)
-2. It completes EPIC 01 auth flows (email verification, password reset)
-3. It unblocks EPIC 02 (lead confirmation is email-dependent)
-4. BullMQ worker is already scaffolded
-5. MailHog is already running in Docker
-
-After EPIC 10, proceed with **EPIC 04** and **EPIC 07** (can be parallelized).
+**Alternative Path:**
+- Could do EPIC 07 (Billing) in parallel with EPIC 05
+- Both are needed for EPIC 06 (Distribution Engine)
 
 ---
 
 ## Epic Status Tracker
 
-| Phase | Epic | Name | Status | Started | Completed |
-|-------|------|------|--------|---------|-----------|
-| 1 | 01 | Platform Foundation | ✅ Done | Jan 3, 2026 | Jan 3, 2026 |
-| 2 | 10 | Email Infrastructure | ✅ Done | Jan 3, 2026 | Jan 4, 2026 |
-| 3 | 02 | Lead Intake & Confirmation | ✅ Done | Jan 4, 2026 | Jan 4, 2026 |
-| 3 | 03 | Admin Lead Review | ✅ Done | Jan 4, 2026 | Jan 4, 2026 |
-| 2 | 04 | Competition Levels | ⬜ **NEXT** | | |
-| 2 | 07 | Billing & Payments | ⬜ Pending | | |
-| 3 | 05 | Filters & Eligibility | ⬜ Pending | | |
-| 4 | 06 | Distribution Engine | ⬜ Pending | | |
-| 5 | 08 | Provider Dashboard | ⬜ Pending | | |
-| 5 | 09 | Bad Lead & Refunds | ⬜ Pending | | |
-| 6 | 11 | Reporting & Analytics | ⬜ Pending | | |
-| 6 | 12 | Observability & Ops | ⬜ Pending | | |
+| Phase | Epic | Name | Status | Deferred Items | Started | Completed |
+|-------|------|------|--------|----------------|---------|-----------|
+| 1 | 01 | Platform Foundation | ✅ Done | 1 P2 remaining | Jan 3, 2026 | Jan 3, 2026 |
+| 2 | 10 | Email Infrastructure | ✅ Done | - | Jan 3, 2026 | Jan 4, 2026 |
+| 3 | 02 | Lead Intake & Confirmation | ✅ Done | - | Jan 4, 2026 | Jan 4, 2026 |
+| 3 | 03 | Admin Lead Review | ✅ Done | - | Jan 4, 2026 | Jan 4, 2026 |
+| 2 | 04 | Competition Levels | ✅ Done | - | Jan 4, 2026 | Jan 4, 2026 |
+| 3 | 05 | Filters & Eligibility | ⬜ **NEXT** | - | | |
+| 2 | 07 | Billing & Payments | ⬜ Pending | - | | |
+| 4 | 06 | Distribution Engine | ⬜ Pending | - | | |
+| 5 | 08 | Provider Dashboard | ⬜ Pending | - | | |
+| 5 | 09 | Bad Lead & Refunds | ⬜ Pending | - | | |
+| 6 | 11 | Reporting & Analytics | ⬜ Pending | 5 P3 items | | |
+| 6 | 12 | Observability & Ops | ⬜ Pending | 2 P2/P3 items | | |
+
+**📋 Deferred Items Tracker:** See `.cursor/docs/Delivery/DEFERRED_ITEMS_SUMMARY.md` for details
 
 ---
 

@@ -12,22 +12,20 @@ This guide explains how to work on the Find Me A Hot Lead project, including the
 
 ### Current Status
 
-| Phase | Epic | Name | Status |
-|-------|------|------|--------|
-| 1 | 01 | Platform Foundation | ✅ **DONE** |
-| 2 | 10 | Email Infrastructure | ✅ **DONE** |
-| 3 | 02 | Lead Intake & Confirmation | ✅ **DONE** |
-| 3 | 03 | Admin Lead Review | ⬜ **NEXT** |
-| 2 | 04 | Competition Levels | ⬜ Pending |
-| 2 | 07 | Billing & Payments | ⬜ Pending |
-| 3 | 02 | Lead Intake | ⬜ Pending |
-| 3 | 05 | Filters & Eligibility | ⬜ Pending |
-| 3 | 03 | Admin Lead Review | ⬜ Pending |
-| 4 | 06 | Distribution Engine | ⬜ Pending |
-| 5 | 08 | Provider Dashboard | ⬜ Pending |
-| 5 | 09 | Bad Lead & Refunds | ⬜ Pending |
-| 6 | 11 | Reporting & Analytics | ⬜ Pending |
-| 6 | 12 | Observability & Ops | ⬜ Pending |
+| Phase | Epic | Name | Status | Deferred Items |
+|-------|------|------|--------|----------------|
+| 1 | 01 | Platform Foundation | ✅ **DONE** | 1 P2 remaining |
+| 2 | 10 | Email Infrastructure | ✅ **DONE** | - |
+| 3 | 02 | Lead Intake & Confirmation | ✅ **DONE** | - |
+| 3 | 03 | Admin Lead Review | ✅ **DONE** | - |
+| 3 | 04 | Competition Levels | ✅ **DONE** | - |
+| 3 | 05 | Filters & Eligibility | ⬜ **NEXT** | - |
+| 4 | 06 | Distribution Engine | ⬜ Pending | - |
+| 2 | 07 | Billing & Payments | ⬜ Pending | - |
+| 5 | 08 | Provider Dashboard | ⬜ Pending | - |
+| 5 | 09 | Bad Lead & Refunds | ⬜ Pending | - |
+| 6 | 11 | Reporting & Analytics | ⬜ Pending | 5 P3 items |
+| 6 | 12 | Observability & Ops | ⬜ Pending | 2 P2/P3 items |
 
 ### Critical Path
 
@@ -43,19 +41,33 @@ EPIC 01 ✅ → EPIC 10 → EPIC 04 → EPIC 07 → EPIC 02 → EPIC 05 → EPIC
 ```
 .cursor/docs/
 ├── Delivery/                              # Implementation epics & stories
-│   ├── EPIC_EXECUTION_PLAN.md            # ⭐ START HERE - Epic order & dependencies
-│   ├── build_plan_mvp_epics.md           # Epic index
-│   ├── EPIC_01_IMPLEMENTATION_PLAN.md    # ✅ Completed implementation plan
+│   ├── build_plan_mvp_epics.md           # ⭐ Epic index & dependencies
+│   ├── DEFERRED_ITEMS_SUMMARY.md         # ⭐ Deferred items tracker (CHECK THIS!)
+│   ├── DEFERRED_ITEMS_ANALYSIS.md        # Deferred items analysis & action plan
+│   │
+│   ├── EPIC_01_IMPLEMENTATION_PLAN.md    # ✅ Completed implementation plans
+│   ├── EPIC_02_IMPLEMENTATION_PLAN.md
+│   ├── EPIC_03_IMPLEMENTATION_PLAN.md
+│   ├── EPIC_04_IMPLEMENTATION_PLAN.md
+│   ├── EPIC_10_IMPLEMENTATION_PLAN.md
+│   │
+│   ├── EPIC_01_DEFERRED_ITEMS_COMPLETE.md # ✅ Deferred items completion reports
+│   │
+│   ├── EPIC_02_REVIEW.md                 # ✅ Epic review documents
+│   ├── EPIC_03_REVIEW.md
+│   ├── EPIC_04_REVIEW.md
+│   ├── EPIC_10_REVIEW.md
+│   │
 │   ├── Epic_01_Platform_Foundation.md    # ✅ DONE
-│   ├── Epic_02_Lead_Intake_Confirmation.md
-│   ├── Epic_03_Admin_Lead_Review_Approval.md
-│   ├── Epic_04_Competition_Levels_Subscriptions.md
-│   ├── Epic_05_Filters_Eligibility.md
+│   ├── Epic_02_Lead_Intake_Confirmation.md # ✅ DONE
+│   ├── Epic_03_Admin_Lead_Review_Approval.md # ✅ DONE
+│   ├── Epic_04_Competition_Levels_Subscriptions.md # ✅ DONE
+│   ├── Epic_05_Filters_Eligibility.md    # ⬜ NEXT
 │   ├── Epic_06_Distribution_Engine.md
 │   ├── Epic_07_Billing_Balance_Payments.md
 │   ├── Epic_08_Provider_Lead_Management.md
 │   ├── Epic_09_Bad_Lead_Refunds.md
-│   ├── Epic_10_Notifications_Email.md    # ⬜ NEXT
+│   ├── Epic_10_Notifications_Email.md    # ✅ DONE
 │   ├── Epic_11_Reporting_Analytics.md
 │   └── Epic_12_Observability_and_Ops_LOCKED_v4.md
 │
@@ -75,20 +87,39 @@ EPIC 01 ✅ → EPIC 10 → EPIC 04 → EPIC 07 → EPIC 02 → EPIC 05 → EPIC
 
 1. **Check the Execution Plan**
    ```bash
-   cat .cursor/docs/Delivery/EPIC_EXECUTION_PLAN.md
+   cat .cursor/docs/Delivery/build_plan_mvp_epics.md
    ```
    Verify the epic you want to work on is unblocked.
 
-2. **Read the Epic Document**
+2. **Review Deferred Items** ⭐ **NEW - IMPORTANT**
    ```bash
-   # Example: Starting EPIC 10
-   cat .cursor/docs/Delivery/Epic_10_Notifications_Email.md
+   cat .cursor/docs/Delivery/DEFERRED_ITEMS_SUMMARY.md
    ```
+   Check if there are any deferred items assigned to this epic from previous epic reviews.
+   
+   **Questions to ask:**
+   - Are there deferred items for this epic?
+   - What's the priority (P1/P2/P3)?
+   - Should they be implemented now or later?
+   - Do they affect the implementation plan?
 
-3. **Create Implementation Plan** (Optional)
+3. **Read the Epic Document**
+   ```bash
+   # Example: Starting EPIC 11
+   cat .cursor/docs/Delivery/Epic_11_Reporting_Analytics.md
+   ```
+   Look for the "⚠️ Deferred Items from Other Epics" section at the bottom.
+
+4. **Create Implementation Plan**
    Create an implementation plan file like `EPIC_XX_IMPLEMENTATION_PLAN.md` to track progress.
+   
+   **Include deferred items in the plan:**
+   - List all deferred items for this epic
+   - Decide which to implement (priority-based)
+   - Add them as phases in the implementation plan
+   - Document why any P2 items are being deferred further (if applicable)
 
-4. **Reference in Your Code**
+5. **Reference in Your Code**
    ```typescript
    /**
     * Email Provider Abstraction
@@ -101,10 +132,71 @@ EPIC 01 ✅ → EPIC 10 → EPIC 04 → EPIC 07 → EPIC 02 → EPIC 05 → EPIC
    }
    ```
 
-5. **Update Status**
+6. **Update Status**
    After completing an epic, update the status in:
-   - `EPIC_EXECUTION_PLAN.md`
+   - `build_plan_mvp_epics.md`
    - `DEVELOPMENT_GUIDE.md` (this file)
+   - `DEFERRED_ITEMS_SUMMARY.md` (mark completed items)
+
+---
+
+### Completing an Epic
+
+After implementing all phases of an epic, follow this checklist:
+
+1. **✅ Code Quality Review**
+   - All TypeScript compilation errors fixed
+   - All linter warnings addressed
+   - Code follows project conventions
+   - Proper error handling in place
+
+2. **✅ Test & Validate**
+   - Create test script (e.g., `test-epic05.sh`)
+   - Run all tests (unit, integration, build)
+   - Verify database schema changes
+   - Test all API endpoints
+   - Verify UI pages (if applicable)
+
+3. **✅ Review Against Implementation Plan**
+   - All phases completed
+   - All acceptance criteria met
+   - Business rules enforced
+   - Security requirements satisfied
+
+4. **✅ Create Review Document**
+   - Create `EPIC_XX_REVIEW.md`
+   - Document what was built
+   - List findings (if any)
+   - Identify deferred items (P1/P2/P3)
+   - Provide recommendations
+
+5. **✅ Update Deferred Items Tracker** ⭐ **IMPORTANT**
+   ```bash
+   # Update the master tracker
+   nano .cursor/docs/Delivery/DEFERRED_ITEMS_SUMMARY.md
+   ```
+   
+   **For each deferred item:**
+   - Add to DEFERRED_ITEMS_SUMMARY.md with priority
+   - Add to target epic specification (⚠️ section)
+   - Document context, recommendation, and guidance
+   - Estimate effort and expected impact
+
+6. **✅ Update Documentation**
+   - Update `DEVELOPMENT_GUIDE.md` status table
+   - Update `build_plan_mvp_epics.md` if needed
+   - Update `README.md` if new features affect setup
+
+7. **✅ Commit & Push**
+   ```bash
+   git add -A
+   git commit -m "feat(epicXX): complete EPIC XX implementation"
+   git push
+   ```
+
+8. **✅ Create Summary Document** (Optional)
+   - Create `EPIC_XX_SUMMARY.md` for executive summary
+   - Highlight key features and metrics
 
 ---
 

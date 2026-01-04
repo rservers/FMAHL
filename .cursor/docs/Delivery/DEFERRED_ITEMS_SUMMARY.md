@@ -327,6 +327,59 @@ This document tracks all deferred items identified during epic reviews. Each ite
 
 ---
 
+## Review Process
+
+### When Planning an Epic
+
+**STEP 1:** Check this tracker before creating implementation plan
+```bash
+cat .cursor/docs/Delivery/DEFERRED_ITEMS_SUMMARY.md
+```
+
+**STEP 2:** Check the epic specification for deferred items section
+```bash
+# Example for EPIC 11
+grep -A 20 "⚠️ Deferred Items" .cursor/docs/Delivery/Epic_11_Reporting_Analytics.md
+```
+
+**STEP 3:** Decide which deferred items to implement
+- **P1 items:** MUST implement (blocking)
+- **P2 items:** SHOULD implement before production
+- **P3 items:** MAY implement based on priority
+
+**STEP 4:** Include deferred items in implementation plan
+- Add as phases in `EPIC_XX_IMPLEMENTATION_PLAN.md`
+- Document decision if deferring P2 items further
+- Update effort estimates
+
+### When Completing an Epic
+
+**STEP 1:** Identify any new deferred items during review
+- Performance optimizations
+- Security enhancements
+- Feature improvements
+- Technical debt
+
+**STEP 2:** Document each deferred item
+- Add to this tracker (DEFERRED_ITEMS_SUMMARY.md)
+- Add to target epic specification (⚠️ section)
+- Include: context, priority, effort, recommendation
+
+**STEP 3:** Update status of completed deferred items
+- Mark items as ✅ Complete in this tracker
+- Update epic specification status
+- Create completion report if significant
+
+### Review Frequency
+
+- **Before each epic:** Check for deferred items
+- **After each epic:** Document new deferred items
+- **Monthly:** Review P2 items for prioritization
+- **Before production:** Ensure all P1/P2 items complete
+
+---
+
 **Maintained By:** Development Team  
-**Review Frequency:** After each epic completion
+**Last Reviewed:** Jan 4, 2026  
+**Next Review:** Before EPIC 05
 
