@@ -294,6 +294,69 @@ Example:
 - Track number of reactivations per run
 - Alert if job fails 3 times in a row
 
+---
+
+### Email Queue Monitoring (EPIC 10)
+**Deferred From:** EPIC 10 - Email Infrastructure  
+**Priority:** P2 (Important for Production)  
+**Description:** The email queue (BullMQ) needs monitoring for production operations. Admins should be alerted to queue depth, failures, and delays.
+
+**Monitoring Requirements:**
+- **Queue depth monitoring:** Alert if >1000 emails queued
+- **DLQ monitoring:** Alert if dead letter queue has >10 emails
+- **Send rate tracking:** Track emails/minute for SES limit compliance
+- **Failed job alerts:** Alert on repeated failures for same email
+
+**Implementation Approach:**
+1. Expose BullMQ metrics endpoint
+2. Integrate with Prometheus/Grafana
+3. Add alerting rules
+4. Create dashboard for email operations
+
+**Expected Impact:**
+- Early detection of email delivery issues
+- Compliance with SES sending limits
+- Reduced email delivery failures
+
+---
+
+### Balance Reconciliation Job (EPIC 07)
+**Deferred From:** EPIC 07 - Billing & Payments  
+**Priority:** P3  
+**Description:** Provider cached balance should be periodically reconciled against the immutable ledger to detect any discrepancies.
+
+**Job Details:**
+- **Function:** `calculateBalance()` in `apps/web/lib/services/ledger.ts`
+- **Schedule:** Nightly at 3 AM (cron: `0 3 * * *`)
+- **Purpose:** Compare `providers.balance` vs `SUM(provider_ledger.amount)` for all providers
+- **Tolerance:** 0.01 USD for floating point comparison
+
+**Implementation Approach:**
+1. Create job in `apps/worker/src/jobs/balance-reconciliation.ts`
+2. Use `calculateBalance()` from ledger service
+3. Schedule via BullMQ repeat jobs
+4. Add monitoring metrics
+
+**Expected Behavior:**
+- Runs nightly at 3 AM
+- Queries all providers
+- Calculates ledger balance
+- Compares to cached balance
+- Logs discrepancies with severity: warning
+- Alerts if discrepancies > 1.00 USD
+- Auto-corrects if within tolerance
+
+**Monitoring:**
+- Track job execution time
+- Track number of discrepancies found
+- Track number of auto-corrections
+- Alert on large discrepancies (>1.00 USD)
+
+**Expected Impact:**
+- Early detection of balance calculation bugs
+- Increased confidence in billing accuracy
+- Compliance for financial audits
+
 **Status:** To be implemented in EPIC 12 scheduled jobs infrastructure.
 
 ---
