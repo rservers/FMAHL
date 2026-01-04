@@ -131,6 +131,11 @@ async function migrate() {
         for (const table of tables) {
           console.log(`  - ${table.table_name}`)
         }
+
+        // Seed email templates (idempotent)
+        console.log('\n🌱 Seeding default email templates...')
+        await seedEmailTemplates()
+        console.log('✅ Email templates seed complete!')
       } else {
         console.error('❌ Migration failed:', error.message || error)
         process.exit(1)
