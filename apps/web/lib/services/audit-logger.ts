@@ -55,6 +55,20 @@ export const AuditActions = {
   BILLING_DEPOSIT: 'billing.deposit',
   BILLING_CHARGE: 'billing.charge',
   BILLING_REFUND: 'billing.refund',
+  
+  // Competition level actions (EPIC 04)
+  COMPETITION_LEVEL_CREATED: 'competition_level.created',
+  COMPETITION_LEVEL_UPDATED: 'competition_level.updated',
+  COMPETITION_LEVEL_DEACTIVATED: 'competition_level.deactivated',
+  COMPETITION_LEVEL_REACTIVATED: 'competition_level.reactivated',
+  COMPETITION_LEVEL_REORDERED: 'competition_level.reordered',
+  COMPETITION_LEVEL_DELETE_BLOCKED: 'competition_level.delete_blocked',
+  
+  // Subscription actions (EPIC 04)
+  SUBSCRIPTION_CREATED: 'subscription.created',
+  SUBSCRIPTION_DEACTIVATED: 'subscription.deactivated',
+  SUBSCRIPTION_REACTIVATED: 'subscription.reactivated',
+  SUBSCRIPTION_DELETED: 'subscription.deleted',
 } as const
 
 export type AuditAction = typeof AuditActions[keyof typeof AuditActions]

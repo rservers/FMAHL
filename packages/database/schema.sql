@@ -164,6 +164,62 @@ CREATE INDEX idx_niche_form_schemas_niche ON niche_form_schemas(niche_id);
 CREATE INDEX idx_niche_form_schemas_active ON niche_form_schemas(niche_id, is_active);
 
 -- ============================================
+-- COMPETITION LEVELS (EPIC 04)
+-- ============================================
+
+CREATE TABLE competition_levels (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  niche_id UUID NOT NULL REFERENCES niches(id) ON DELETE RESTRICT,
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  price_per_lead_cents INTEGER NOT NULL CHECK (price_per_lead_cents >= 0),
+  max_recipients INTEGER NOT NULL CHECK (max_recipients > 0 AND max_recipients <= 100),
+  order_position INTEGER NOT NULL CHECK (order_position >= 1),
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
+);
+
+-- Unique constraints (only for non-deleted)
+CREATE UNIQUE INDEX idx_competition_levels_name_unique 
+  ON competition_levels(niche_id, name) 
+  WHERE deleted_at IS NULL;
+
+CREATE UNIQUE INDEX idx_competition_levels_order_unique 
+  ON competition_levels(niche_id, order_position) 
+  WHERE deleted_at IS NULL;
+
+CREATE INDEX idx_competition_levels_niche ON competition_levels(niche_id);
+CREATE INDEX idx_competition_levels_active ON competition_levels(niche_id, is_active) WHERE deleted_at IS NULL;
+CREATE INDEX idx_competition_levels_order ON competition_levels(niche_id, order_position) WHERE deleted_at IS NULL;
+
+-- ============================================
+-- COMPETITION LEVEL SUBSCRIPTIONS (EPIC 04)
+-- ============================================
+
+CREATE TABLE competition_level_subscriptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  provider_id UUID NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
+  competition_level_id UUID NOT NULL REFERENCES competition_levels(id) ON DELETE RESTRICT,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  deactivation_reason VARCHAR(255),
+  subscribed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
+);
+
+-- Provider can only subscribe once per level (when not deleted)
+CREATE UNIQUE INDEX idx_cls_provider_level_unique 
+  ON competition_level_subscriptions(provider_id, competition_level_id) 
+  WHERE deleted_at IS NULL;
+
+CREATE INDEX idx_cls_provider ON competition_level_subscriptions(provider_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_cls_level ON competition_level_subscriptions(competition_level_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_cls_active ON competition_level_subscriptions(competition_level_id, is_active) WHERE deleted_at IS NULL;
+
+-- ============================================
 -- PROVIDERS
 -- ============================================
 
@@ -433,6 +489,12 @@ CREATE TRIGGER update_provider_subscriptions_updated_at BEFORE UPDATE ON provide
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_provider_filters_updated_at BEFORE UPDATE ON provider_filters
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_competition_levels_updated_at BEFORE UPDATE ON competition_levels
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_competition_level_subscriptions_updated_at BEFORE UPDATE ON competition_level_subscriptions
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_provider_quality_metrics_updated_at BEFORE UPDATE ON provider_quality_metrics

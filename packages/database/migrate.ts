@@ -126,6 +126,60 @@ async function ensureEpic03Schema() {
   `)
 }
 
+async function ensureEpic04Schema() {
+  // EPIC 04: Create competition_levels and competition_level_subscriptions tables idempotently
+  await sql.unsafe(`
+    -- Create competition_levels table if it doesn't exist
+    CREATE TABLE IF NOT EXISTS competition_levels (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      niche_id UUID NOT NULL REFERENCES niches(id) ON DELETE RESTRICT,
+      name VARCHAR(100) NOT NULL,
+      description TEXT,
+      price_per_lead_cents INTEGER NOT NULL CHECK (price_per_lead_cents >= 0),
+      max_recipients INTEGER NOT NULL CHECK (max_recipients > 0 AND max_recipients <= 100),
+      order_position INTEGER NOT NULL CHECK (order_position >= 1),
+      is_active BOOLEAN NOT NULL DEFAULT true,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      deleted_at TIMESTAMPTZ
+    );
+
+    -- Create competition_level_subscriptions table if it doesn't exist
+    CREATE TABLE IF NOT EXISTS competition_level_subscriptions (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      provider_id UUID NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
+      competition_level_id UUID NOT NULL REFERENCES competition_levels(id) ON DELETE RESTRICT,
+      is_active BOOLEAN NOT NULL DEFAULT true,
+      deactivation_reason VARCHAR(255),
+      subscribed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      deleted_at TIMESTAMPTZ
+    );
+
+    -- Create unique indexes (only for non-deleted)
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_competition_levels_name_unique 
+      ON competition_levels(niche_id, name) 
+      WHERE deleted_at IS NULL;
+
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_competition_levels_order_unique 
+      ON competition_levels(niche_id, order_position) 
+      WHERE deleted_at IS NULL;
+
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_cls_provider_level_unique 
+      ON competition_level_subscriptions(provider_id, competition_level_id) 
+      WHERE deleted_at IS NULL;
+
+    -- Create regular indexes
+    CREATE INDEX IF NOT EXISTS idx_competition_levels_niche ON competition_levels(niche_id);
+    CREATE INDEX IF NOT EXISTS idx_competition_levels_active ON competition_levels(niche_id, is_active) WHERE deleted_at IS NULL;
+    CREATE INDEX IF NOT EXISTS idx_competition_levels_order ON competition_levels(niche_id, order_position) WHERE deleted_at IS NULL;
+    CREATE INDEX IF NOT EXISTS idx_cls_provider ON competition_level_subscriptions(provider_id) WHERE deleted_at IS NULL;
+    CREATE INDEX IF NOT EXISTS idx_cls_level ON competition_level_subscriptions(competition_level_id) WHERE deleted_at IS NULL;
+    CREATE INDEX IF NOT EXISTS idx_cls_active ON competition_level_subscriptions(competition_level_id, is_active) WHERE deleted_at IS NULL;
+  `)
+}
+
 async function migrate() {
   console.log('🚀 Running database migrations...\n')
 
@@ -147,6 +201,9 @@ async function migrate() {
     
     // EPIC 03: Ensure admin approval schema updates
     await ensureEpic03Schema()
+    
+    // EPIC 04: Ensure competition levels schema
+    await ensureEpic04Schema()
     
     // Verify tables were created
     const tables = await sql`
@@ -198,6 +255,9 @@ async function migrate() {
       
       // EPIC 03: Ensure admin approval schema updates
       await ensureEpic03Schema()
+      
+      // EPIC 04: Ensure competition levels schema
+      await ensureEpic04Schema()
       
       const tables = await sql`
         SELECT table_name 

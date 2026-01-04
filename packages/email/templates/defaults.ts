@@ -203,5 +203,33 @@ If you have questions, please contact our support team.`,
       { name: 'rejection_reason', required: true },
     ],
   },
+  subscription_deactivated: {
+    key: 'subscription_deactivated',
+    subject: 'Subscription deactivated - insufficient balance',
+    html: '<p>Hi {{provider_name}},</p>\n<p>Your subscription to the <strong>{{level_name}}</strong> competition level has been deactivated due to insufficient balance.</p>\n<p>Price per lead: ${{price_per_lead}}</p>\n<p>Please add funds to your account to reactivate this subscription and continue receiving leads.</p>\n<p>Add funds: <a href="{{deposit_url}}">Add Funds</a></p>',
+    text: 'Hi {{provider_name}},\n\nYour subscription to the {{level_name}} competition level has been deactivated due to insufficient balance.\n\nPrice per lead: ${{price_per_lead}}\n\nPlease add funds to your account to reactivate this subscription and continue receiving leads.\n\nAdd funds: {{deposit_url}}',
+    variables: [
+      { name: 'provider_name', required: true },
+      { name: 'level_name', required: true },
+      { name: 'price_per_lead', required: true },
+      { name: 'deposit_url', required: false },
+    ],
+  },
+  subscription_reactivated: {
+    key: 'subscription_reactivated',
+    subject: 'Subscription reactivated',
+    html: `<p>Hi {{provider_name}},</p>
+<p>Great news! Your subscription to the <strong>{{level_name}}</strong> competition level has been reactivated.</p>
+<p>You will now receive leads from this competition level again.</p>`,
+    text: `Hi {{provider_name}},
+
+Great news! Your subscription to the {{level_name}} competition level has been reactivated.
+
+You will now receive leads from this competition level again.`,
+    variables: [
+      { name: 'provider_name', required: true },
+      { name: 'level_name', required: true },
+    ],
+  },
 }
 
