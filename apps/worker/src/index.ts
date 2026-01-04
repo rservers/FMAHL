@@ -3,6 +3,7 @@ import { resolve } from 'path'
 import { ConnectionOptions, Queue, Worker } from 'bullmq'
 import IORedis from 'ioredis'
 import { emailWorker } from './processors/email'
+import { createDistributionWorker } from './processors/distribution'
 
 // Load .env.local from project root (2 levels up from this file)
 config({ path: resolve(__dirname, '../../../.env.local') })
@@ -23,32 +24,21 @@ const redis = new IORedis(connection)
 console.log('🚀 Worker starting...')
 console.log(`📡 Redis connection: ${redisUrl.hostname}:${redisUrl.port}`)
 
-// Example queue setup - you can add your actual job queues here
-const exampleQueue = new Queue('example', { connection })
+// Distribution worker (EPIC 06)
+const distributionWorker = createDistributionWorker(connection)
 
-// Example worker - you can add your actual job processors here
-const exampleWorker = new Worker(
-  'example',
-  async (job) => {
-    console.log(`Processing job ${job.id} with data:`, job.data)
-    // Add your job processing logic here
-    return { success: true }
-  },
-  { connection }
-)
-
-exampleWorker.on('completed', (job) => {
-  console.log(`✅ Job ${job.id} completed`)
+distributionWorker.on('completed', (job) => {
+  console.log(`✅ Distribution job ${job.id} completed`)
 })
 
-exampleWorker.on('failed', (job, err) => {
-  console.error(`❌ Job ${job?.id} failed:`, err)
+distributionWorker.on('failed', (job, err) => {
+  console.error(`❌ Distribution job ${job?.id} failed:`, err)
 })
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('🛑 Shutting down worker...')
-  await exampleWorker.close()
+  await distributionWorker.close()
   await emailWorker.close()
   await redis.quit()
   process.exit(0)
@@ -56,7 +46,7 @@ process.on('SIGTERM', async () => {
 
 process.on('SIGINT', async () => {
   console.log('🛑 Shutting down worker...')
-  await exampleWorker.close()
+  await distributionWorker.close()
   await emailWorker.close()
   await redis.quit()
   process.exit(0)

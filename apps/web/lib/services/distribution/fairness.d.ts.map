@@ -1,0 +1,1 @@
+{"version":3,"file":"fairness.d.ts","sourceRoot":"","sources":["fairness.ts"],"names":[],"mappings":"AAAA;;;;;;;GAOG;AAIH,MAAM,WAAW,gBAAgB;IAC/B,UAAU,EAAE,MAAM,CAAA;IAClB,cAAc,EAAE,MAAM,CAAA;CACvB;AAED;;;;;;;;;;;GAWG;AACH,wBAAsB,uBAAuB,CAC3C,kBAAkB,EAAE,MAAM,EAC1B,aAAa,EAAE,MAAM,EACrB,kBAAkB,EAAE,MAAM,EAAE,EAC5B,uBAAuB,EAAE,MAAM,EAAE,GAChC,OAAO,CAAC,gBAAgB,EAAE,CAAC,CAgC7B"}

@@ -14,6 +14,7 @@ import { approveLeadSchema } from '@/lib/validations/admin-leads'
 import { sql } from '@/lib/db'
 import { logAction, AuditActions } from '@/lib/services/audit-logger'
 import { emailService } from '@findmeahotlead/email'
+import { createDistributionQueue } from '@/lib/queues/distribution'
 
 export const POST = adminWithMFA(async (request: NextRequest, user: any) => {
   try {
@@ -124,6 +125,26 @@ export const POST = adminWithMFA(async (request: NextRequest, user: any) => {
         } catch (emailError) {
           // Log but don't fail - email is optional
           console.error('Failed to send approval email:', emailError)
+        }
+      }
+
+      // EPIC 06: Auto-distribute approved lead (if enabled)
+      const AUTO_DISTRIBUTE_ENABLED = process.env.AUTO_DISTRIBUTE_ON_APPROVAL === 'true'
+      if (AUTO_DISTRIBUTE_ENABLED) {
+        try {
+          const queue = createDistributionQueue()
+          await queue.add('distribute', {
+            leadId: id,
+            triggeredBy: {
+              actorId: user.id,
+              actorRole: 'admin',
+            },
+            requestedAt: new Date().toISOString(),
+          })
+          console.log(`[Auto-Distribute] Queued distribution for lead ${id} after approval`)
+        } catch (distError) {
+          // Log but don't fail - distribution can be triggered manually later
+          console.error('Failed to auto-queue distribution:', distError)
         }
       }
 

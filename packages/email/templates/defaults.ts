@@ -338,5 +338,18 @@ View your billing history: {{billing_url}}`,
       { name: 'billing_url', required: false },
     ],
   },
+  lead_assigned: {
+    key: 'lead_assigned',
+    subject: 'New Lead Assigned - {{niche_name}}',
+    html: '<p>Hi {{provider_name}},</p>\n<p>You have been assigned a new lead!</p>\n<p><strong>Competition Level:</strong> {{level_name}}</p>\n<p><strong>Amount Charged:</strong> ${{price_charged}}</p>\n<p>View the lead details in your dashboard.</p>\n<p><a href="{{dashboard_url}}">View Lead</a></p>',
+    text: 'Hi {{provider_name}},\n\nYou have been assigned a new lead!\n\nCompetition Level: {{level_name}}\nAmount Charged: ${{price_charged}}\n\nView the lead details in your dashboard: {{dashboard_url}}',
+    variables: [
+      { name: 'provider_name', required: true },
+      { name: 'niche_name', required: true },
+      { name: 'level_name', required: true },
+      { name: 'price_charged', required: true },
+      { name: 'dashboard_url', required: false },
+    ],
+  },
 }
 

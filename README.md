@@ -191,8 +191,7 @@ npm run email:test
 | 2 | 04 | Competition Levels | ✅ Done |
 | 3 | 05 | Filters & Eligibility | ✅ Done |
 | 2 | 07 | Billing & Payments | ✅ Done |
-| 4 | 06 | Distribution Engine | ⬜ **Next** |
-| 4 | 06 | Distribution Engine | ⬜ Pending |
+| 4 | 06 | Distribution Engine | ✅ Done |
 | 5 | 08-09 | Provider UX & Refunds | ⬜ Pending |
 | 6 | 11-12 | Reporting & Ops | ⬜ Pending |
 
@@ -220,6 +219,12 @@ npm run email:test
 - Admin refunds: `POST /api/v1/admin/lead-assignments/:id/refund`
 - Admin balance adjustments: `POST /api/v1/admin/providers/:id/balance-adjust`
 - Admin billing oversight: `GET /api/v1/admin/billing/providers`, `GET /api/v1/admin/payments`
+
+### Distribution Engine (EPIC 06)
+- Manual distribution trigger: `POST /api/v1/admin/leads/:id/distribute`
+- Distribution status: `GET /api/v1/admin/leads/:id/distribution-status`
+- Lead assignments list: `GET /api/v1/admin/leads/:id/assignments`
+- Auto-distribution: Enabled via `AUTO_DISTRIBUTE_ON_APPROVAL=true` env var
 
 ## 🚢 Deployment
 

@@ -136,6 +136,8 @@ CREATE TABLE niches (
   lead_price_cents INTEGER NOT NULL,
   form_schema JSONB NOT NULL,
   active_schema_version INTEGER NOT NULL DEFAULT 1,
+  -- EPIC 06: Starting level rotation pointer for fair distribution
+  next_start_level_order_position INT NOT NULL DEFAULT 1,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -396,6 +398,10 @@ CREATE TABLE leads (
   rejection_reason TEXT,
   admin_notes TEXT,
   
+  -- EPIC 06: Distribution tracking
+  distributed_at TIMESTAMPTZ,
+  distribution_attempts INTEGER NOT NULL DEFAULT 0,
+  
   -- Metadata
   ip_address INET,
   user_agent TEXT,
@@ -429,7 +435,9 @@ CREATE TABLE lead_assignments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
   provider_id UUID NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
-  subscription_id UUID NOT NULL REFERENCES provider_subscriptions(id) ON DELETE CASCADE,
+  subscription_id UUID NOT NULL REFERENCES competition_level_subscriptions(id) ON DELETE RESTRICT,
+  -- EPIC 06: Competition level for distribution tracking
+  competition_level_id UUID NOT NULL REFERENCES competition_levels(id) ON DELETE RESTRICT,
   status assignment_status NOT NULL DEFAULT 'active',
   price_cents INTEGER NOT NULL,
   assigned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

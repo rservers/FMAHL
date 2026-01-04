@@ -240,6 +240,59 @@ async function ensureEpic05Schema() {
   `)
 }
 
+async function ensureEpic06Schema() {
+  // EPIC 06: Add distribution tracking fields idempotently
+  await sql.unsafe(`
+    -- Add next_start_level_order_position to niches if it doesn't exist
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'niches' AND column_name = 'next_start_level_order_position') THEN
+        ALTER TABLE niches ADD COLUMN next_start_level_order_position INT NOT NULL DEFAULT 1;
+      END IF;
+    END $$;
+
+    -- Add distribution tracking columns to leads if they don't exist
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'leads' AND column_name = 'distributed_at') THEN
+        ALTER TABLE leads ADD COLUMN distributed_at TIMESTAMPTZ;
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'leads' AND column_name = 'distribution_attempts') THEN
+        ALTER TABLE leads ADD COLUMN distribution_attempts INT NOT NULL DEFAULT 0;
+      END IF;
+    END $$;
+
+    -- Add index for distribution status queries
+    CREATE INDEX IF NOT EXISTS idx_leads_distributed_at 
+      ON leads(distributed_at) 
+      WHERE distributed_at IS NOT NULL;
+
+    -- Add competition_level_id to lead_assignments if it doesn't exist
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'lead_assignments' AND column_name = 'competition_level_id') THEN
+        ALTER TABLE lead_assignments ADD COLUMN competition_level_id UUID REFERENCES competition_levels(id) ON DELETE RESTRICT;
+        
+        -- Update existing rows by joining with competition_level_subscriptions
+        UPDATE lead_assignments la
+        SET competition_level_id = cls.competition_level_id
+        FROM competition_level_subscriptions cls
+        WHERE la.subscription_id = cls.id
+          AND la.competition_level_id IS NULL;
+        
+        -- Make it NOT NULL after populating
+        ALTER TABLE lead_assignments ALTER COLUMN competition_level_id SET NOT NULL;
+      END IF;
+    END $$;
+
+    -- Add index for competition level queries
+    CREATE INDEX IF NOT EXISTS idx_lead_assignments_competition_level 
+      ON lead_assignments(competition_level_id);
+  `)
+}
+
 async function ensureEpic07Schema() {
   // EPIC 07: Add balance columns to providers, create payments table, update provider_ledger
   await sql.unsafe(`
@@ -408,6 +461,9 @@ async function migrate() {
     // EPIC 07: Ensure billing schema
     await ensureEpic07Schema()
     
+    // EPIC 06: Ensure distribution schema
+    await ensureEpic06Schema()
+    
     // Verify tables were created
     const tables = await sql`
       SELECT table_name 
@@ -467,6 +523,9 @@ async function migrate() {
       
       // EPIC 07: Ensure billing schema
       await ensureEpic07Schema()
+      
+      // EPIC 06: Ensure distribution schema
+      await ensureEpic06Schema()
       
       const tables = await sql`
         SELECT table_name 

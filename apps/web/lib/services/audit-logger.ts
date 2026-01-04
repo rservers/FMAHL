@@ -83,6 +83,13 @@ export const AuditActions = {
   REFUND_PROCESSED: 'refund.processed',
   BALANCE_ADJUSTED: 'balance.adjusted',
   LOW_BALANCE_ALERT_SENT: 'low_balance.alert_sent',
+  
+  // Distribution actions (EPIC 06)
+  DISTRIBUTION_STARTED: 'distribution.started',
+  DISTRIBUTION_COMPLETED: 'distribution.completed',
+  DISTRIBUTION_FAILED: 'distribution.failed',
+  DISTRIBUTION_SKIPPED_PROVIDER: 'distribution.skipped_provider',
+  ASSIGNMENT_CREATED: 'assignment.created',
 } as const
 
 export type AuditAction = typeof AuditActions[keyof typeof AuditActions]
