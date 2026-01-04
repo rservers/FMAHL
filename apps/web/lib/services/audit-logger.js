@@ -77,6 +77,12 @@ export const AuditActions = {
     DISTRIBUTION_FAILED: 'distribution.failed',
     DISTRIBUTION_SKIPPED_PROVIDER: 'distribution.skipped_provider',
     ASSIGNMENT_CREATED: 'assignment.created',
+    // Provider lead management actions (EPIC 08)
+    LEAD_VIEWED: 'lead.viewed',
+    LEAD_ACCEPTED: 'lead.accepted',
+    LEAD_REJECTED_BY_PROVIDER: 'lead.rejected_by_provider',
+    LEAD_EXPORT_REQUESTED: 'lead.export_requested',
+    LEAD_EXPORT_COMPLETED: 'lead.export_completed',
 };
 /**
  * Log an audit entry

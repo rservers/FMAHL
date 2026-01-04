@@ -192,6 +192,7 @@ npm run email:test
 | 3 | 05 | Filters & Eligibility | ✅ Done |
 | 2 | 07 | Billing & Payments | ✅ Done |
 | 4 | 06 | Distribution Engine | ✅ Done |
+| 5 | 08 | Provider Lead Management | ✅ Done |
 | 5 | 08-09 | Provider UX & Refunds | ⬜ Pending |
 | 6 | 11-12 | Reporting & Ops | ⬜ Pending |
 
@@ -225,6 +226,14 @@ npm run email:test
 - Distribution status: `GET /api/v1/admin/leads/:id/distribution-status`
 - Lead assignments list: `GET /api/v1/admin/leads/:id/assignments`
 - Auto-distribution: Enabled via `AUTO_DISTRIBUTE_ON_APPROVAL=true` env var
+
+### Provider Lead Management (EPIC 08)
+- Provider inbox: `GET /api/v1/provider/leads` (filter, search, paginate)
+- Lead detail: `GET /api/v1/provider/leads/:leadId` (auto-marks as viewed)
+- Accept lead: `POST /api/v1/provider/leads/:leadId/accept`
+- Reject lead: `POST /api/v1/provider/leads/:leadId/reject` (requires reason)
+- Notification preferences: `GET /api/v1/provider/notification-preferences`, `PATCH /api/v1/provider/notification-preferences`
+- Lead export: `POST /api/v1/provider/leads/export` (5/day limit, max 5000 rows)
 
 ## 🚢 Deployment
 

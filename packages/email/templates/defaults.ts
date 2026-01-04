@@ -351,5 +351,62 @@ View your billing history: {{billing_url}}`,
       { name: 'dashboard_url', required: false },
     ],
   },
+  admin_provider_rejected_lead: {
+    key: 'admin_provider_rejected_lead',
+    subject: 'Provider Rejected Lead - {{niche_name}}',
+    html: `<p>Hello Admin,</p>
+<p>A provider has rejected a lead assignment.</p>
+<p><strong>Provider:</strong> {{provider_name}}</p>
+<p><strong>Lead ID:</strong> {{lead_id}}</p>
+<p><strong>Niche:</strong> {{niche_name}}</p>
+<p><strong>Rejection Reason:</strong> {{rejection_reason}}</p>
+<p><strong>Rejected At:</strong> {{rejected_at}}</p>
+<p>Review the lead in the admin dashboard.</p>`,
+    text: `Hello Admin,
+
+A provider has rejected a lead assignment.
+
+Provider: {{provider_name}}
+Lead ID: {{lead_id}}
+Niche: {{niche_name}}
+Rejection Reason: {{rejection_reason}}
+Rejected At: {{rejected_at}}
+
+Review the lead in the admin dashboard.`,
+    variables: [
+      { name: 'provider_name', required: true },
+      { name: 'lead_id', required: true },
+      { name: 'niche_name', required: true },
+      { name: 'rejection_reason', required: true },
+      { name: 'rejected_at', required: true },
+    ],
+  },
+  lead_export_ready: {
+    key: 'lead_export_ready',
+    subject: 'Your Lead Export is Ready',
+    html: `<p>Hi {{provider_name}},</p>
+<p>Your lead export is ready for download.</p>
+<p><strong>Export Date:</strong> {{export_date}}</p>
+<p><strong>Rows:</strong> {{row_count}}</p>
+<p><a href="{{download_url}}">Download CSV</a></p>
+<p>This link expires at {{expires_at}}.</p>`,
+    text: `Hi {{provider_name}},
+
+Your lead export is ready for download.
+
+Export Date: {{export_date}}
+Rows: {{row_count}}
+
+Download CSV: {{download_url}}
+
+This link expires at {{expires_at}}.`,
+    variables: [
+      { name: 'provider_name', required: true },
+      { name: 'export_date', required: true },
+      { name: 'row_count', required: true },
+      { name: 'download_url', required: true },
+      { name: 'expires_at', required: true },
+    ],
+  },
 }
 

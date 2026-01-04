@@ -50,7 +50,7 @@ const distributionProcessor: Processor<DistributionJobData> = async (job: Job<Di
       entityId: leadId,
       metadata: {
         job_id: job.id,
-        requested_at: triggeredBy.requestedAt,
+        requested_at: job.data.requestedAt,
       },
     })
 

@@ -98,6 +98,34 @@ export const RateLimits = {
     keyPrefix: 'ratelimit:lead_submit',
   } as RateLimitConfig,
 
+  /** Provider inbox: 100 per minute (EPIC 08) */
+  PROVIDER_INBOX: {
+    limit: 100,
+    windowSeconds: 60,
+    keyPrefix: 'ratelimit:provider_inbox',
+  } as RateLimitConfig,
+
+  /** Provider lead detail: 200 per minute (EPIC 08) */
+  PROVIDER_LEAD_DETAIL: {
+    limit: 200,
+    windowSeconds: 60,
+    keyPrefix: 'ratelimit:provider_detail',
+  } as RateLimitConfig,
+
+  /** Provider accept/reject: 50 per minute (EPIC 08) */
+  PROVIDER_ACCEPT_REJECT: {
+    limit: 50,
+    windowSeconds: 60,
+    keyPrefix: 'ratelimit:provider_action',
+  } as RateLimitConfig,
+
+  /** Provider export: 5 per day (EPIC 08) */
+  PROVIDER_EXPORT: {
+    limit: 5,
+    windowSeconds: 24 * 60 * 60, // 24 hours
+    keyPrefix: 'ratelimit:provider_export',
+  } as RateLimitConfig,
+
   /** Lead confirmation: 10 per IP per minute (EPIC 02) */
   LEAD_CONFIRMATION: {
     limit: 10,

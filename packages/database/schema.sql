@@ -429,7 +429,7 @@ CREATE INDEX idx_leads_rejected_at ON leads(rejected_at) WHERE rejected_at IS NO
 -- LEAD ASSIGNMENTS
 -- ============================================
 
-CREATE TYPE assignment_status AS ENUM ('active', 'refunded');
+CREATE TYPE assignment_status AS ENUM ('active', 'accepted', 'rejected', 'refunded');
 
 CREATE TABLE lead_assignments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -441,6 +441,11 @@ CREATE TABLE lead_assignments (
   status assignment_status NOT NULL DEFAULT 'active',
   price_cents INTEGER NOT NULL,
   assigned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  -- EPIC 08: Provider lead management fields
+  viewed_at TIMESTAMPTZ,
+  accepted_at TIMESTAMPTZ,
+  rejected_at TIMESTAMPTZ,
+  rejection_reason TEXT,
   refunded_at TIMESTAMPTZ,
   refund_reason TEXT,
   UNIQUE(lead_id, provider_id)
@@ -449,6 +454,23 @@ CREATE TABLE lead_assignments (
 CREATE INDEX idx_lead_assignments_lead ON lead_assignments(lead_id);
 CREATE INDEX idx_lead_assignments_provider ON lead_assignments(provider_id);
 CREATE INDEX idx_lead_assignments_assigned_at ON lead_assignments(assigned_at DESC);
+
+-- EPIC 08: Provider inbox performance indexes
+CREATE INDEX idx_lead_assignments_provider_assigned
+  ON lead_assignments(provider_id, assigned_at DESC);
+
+CREATE INDEX idx_lead_assignments_provider_status
+  ON lead_assignments(provider_id, status);
+
+CREATE INDEX idx_lead_assignments_provider_niche
+  ON lead_assignments(provider_id, competition_level_id, assigned_at DESC);
+
+-- EPIC 08: Search indexes for leads
+CREATE INDEX idx_leads_contact_email_lower
+  ON leads(LOWER(contact_email));
+
+CREATE INDEX idx_leads_contact_phone
+  ON leads(contact_phone);
 
 -- ============================================
 -- PAYMENTS (EPIC 07)

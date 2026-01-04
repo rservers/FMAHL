@@ -293,6 +293,89 @@ async function ensureEpic06Schema() {
   `)
 }
 
+async function ensureEpic08Schema() {
+  // EPIC 08: Add provider lead management fields and indexes
+  await sql.unsafe(`
+    -- Update assignment_status enum to include 'accepted' and 'rejected'
+    DO $$ BEGIN
+      -- Check if enum values already exist
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_enum 
+        WHERE enumlabel = 'accepted' 
+        AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'assignment_status')
+      ) THEN
+        ALTER TYPE assignment_status ADD VALUE 'accepted';
+      END IF;
+      
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_enum 
+        WHERE enumlabel = 'rejected' 
+        AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'assignment_status')
+      ) THEN
+        ALTER TYPE assignment_status ADD VALUE 'rejected';
+      END IF;
+    END $$;
+
+    -- Add provider lead management fields to lead_assignments
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'lead_assignments' AND column_name = 'viewed_at') THEN
+        ALTER TABLE lead_assignments ADD COLUMN viewed_at TIMESTAMPTZ;
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'lead_assignments' AND column_name = 'accepted_at') THEN
+        ALTER TABLE lead_assignments ADD COLUMN accepted_at TIMESTAMPTZ;
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'lead_assignments' AND column_name = 'rejected_at') THEN
+        ALTER TABLE lead_assignments ADD COLUMN rejected_at TIMESTAMPTZ;
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'lead_assignments' AND column_name = 'rejection_reason') THEN
+        ALTER TABLE lead_assignments ADD COLUMN rejection_reason TEXT;
+      END IF;
+    END $$;
+
+    -- Add notification preferences to providers
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'providers' AND column_name = 'notify_on_new_lead') THEN
+        ALTER TABLE providers ADD COLUMN notify_on_new_lead BOOLEAN NOT NULL DEFAULT true;
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'providers' AND column_name = 'notify_on_lead_status_change') THEN
+        ALTER TABLE providers ADD COLUMN notify_on_lead_status_change BOOLEAN NOT NULL DEFAULT true;
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'providers' AND column_name = 'notify_on_bad_lead_decision') THEN
+        ALTER TABLE providers ADD COLUMN notify_on_bad_lead_decision BOOLEAN NOT NULL DEFAULT true;
+      END IF;
+    END $$;
+
+    -- Add performance indexes for provider inbox
+    CREATE INDEX IF NOT EXISTS idx_lead_assignments_provider_assigned
+      ON lead_assignments(provider_id, assigned_at DESC);
+
+    CREATE INDEX IF NOT EXISTS idx_lead_assignments_provider_status
+      ON lead_assignments(provider_id, status);
+
+    CREATE INDEX IF NOT EXISTS idx_lead_assignments_provider_niche
+      ON lead_assignments(provider_id, competition_level_id, assigned_at DESC);
+
+    -- Add search indexes for leads
+    CREATE INDEX IF NOT EXISTS idx_leads_contact_email_lower
+      ON leads(LOWER(contact_email));
+
+    CREATE INDEX IF NOT EXISTS idx_leads_contact_phone
+      ON leads(contact_phone);
+  `)
+}
+
 async function ensureEpic07Schema() {
   // EPIC 07: Add balance columns to providers, create payments table, update provider_ledger
   await sql.unsafe(`
@@ -526,6 +609,9 @@ async function migrate() {
       
       // EPIC 06: Ensure distribution schema
       await ensureEpic06Schema()
+      
+      // EPIC 08: Ensure provider lead management schema
+      await ensureEpic08Schema()
       
       const tables = await sql`
         SELECT table_name 

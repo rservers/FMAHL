@@ -66,6 +66,11 @@ export declare const AuditActions: {
     readonly DISTRIBUTION_FAILED: "distribution.failed";
     readonly DISTRIBUTION_SKIPPED_PROVIDER: "distribution.skipped_provider";
     readonly ASSIGNMENT_CREATED: "assignment.created";
+    readonly LEAD_VIEWED: "lead.viewed";
+    readonly LEAD_ACCEPTED: "lead.accepted";
+    readonly LEAD_REJECTED_BY_PROVIDER: "lead.rejected_by_provider";
+    readonly LEAD_EXPORT_REQUESTED: "lead.export_requested";
+    readonly LEAD_EXPORT_COMPLETED: "lead.export_completed";
 };
 export type AuditAction = typeof AuditActions[keyof typeof AuditActions];
 /**

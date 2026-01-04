@@ -22,6 +22,7 @@ This guide explains how to work on the Find Me A Hot Lead project, including the
 | 3 | 05 | Filters & Eligibility | ✅ **DONE** | - |
 | 2 | 07 | Billing & Payments | ✅ **DONE** | - |
 | 4 | 06 | Distribution Engine | ✅ **DONE** | - |
+| 5 | 08 | Provider Lead Management | ✅ **DONE** | - |
 | 5 | 08 | Provider Dashboard | ⬜ Pending | - |
 | 5 | 09 | Bad Lead & Refunds | ⬜ Pending | - |
 | 6 | 11 | Reporting & Analytics | ⬜ Pending | 5 P3 items |

@@ -37,6 +37,8 @@ export type TemplateKey =
   | 'low_balance_alert'
   | 'refund_processed'
   | 'lead_assigned'
+  | 'admin_provider_rejected_lead'
+  | 'lead_export_ready'
 
 export interface TemplateVariable {
   name: string
