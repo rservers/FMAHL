@@ -197,11 +197,11 @@ export async function withAuth(
  * ```
  */
 export function createAuthHandler(
-  handler: (request: NextRequest, user: AuthenticatedUser, context?: any) => Promise<NextResponse>,
+  handler: (request: NextRequest, user: AuthenticatedUser) => Promise<NextResponse>,
   options: AuthOptions = {}
 ) {
-  return async (request: NextRequest, context?: any): Promise<NextResponse> => {
-    return withAuth(request, (user) => handler(request, user, context), options)
+  return async (request: NextRequest): Promise<NextResponse> => {
+    return withAuth(request, (user) => handler(request, user), options)
   }
 }
 
