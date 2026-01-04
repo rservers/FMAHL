@@ -164,23 +164,53 @@ After implementing all phases of an epic, follow this checklist:
    - Security requirements satisfied
 
 4. **✅ Create Review Document**
-   - Create `EPIC_XX_REVIEW.md`
+   - Create `EPIC_XX_REVIEW.md` or `EPIC_XX_COMPREHENSIVE_REVIEW.md`
    - Document what was built
    - List findings (if any)
-   - Identify deferred items (P1/P2/P3)
+   - **Identify deferred items (P1/P2/P3)** ⭐ **CRITICAL**
    - Provide recommendations
 
-5. **✅ Update Deferred Items Tracker** ⭐ **IMPORTANT**
+5. **✅ Update Deferred Items Tracker** ⭐ **MANDATORY - DO NOT SKIP**
    ```bash
    # Update the master tracker
    nano .cursor/docs/Delivery/DEFERRED_ITEMS_SUMMARY.md
    ```
    
-   **For each deferred item:**
-   - Add to DEFERRED_ITEMS_SUMMARY.md with priority
-   - Add to target epic specification (⚠️ section)
-   - Document context, recommendation, and guidance
-   - Estimate effort and expected impact
+   **For each deferred item identified in review:**
+   
+   a. **Add to Master Tracker (DEFERRED_ITEMS_SUMMARY.md):**
+      - Create new section: "## From EPIC XX (Epic Name)"
+      - For each item, document:
+        - Priority: P1 (critical), P2 (important), or P3 (nice to have)
+        - Target epic where it should be implemented
+        - Status: 🔴 Not Started / 🟡 In Progress / 🟢 Complete
+        - Effort estimate in hours
+        - Full context explaining why it was deferred
+        - Implementation approach/recommendations
+        - Expected impact when implemented
+      - Update the "Priority Summary" section
+      - Update the "Total Deferred Effort" section
+      - Update "Last Updated" timestamp
+   
+   b. **Add to Target Epic Specification:**
+      - Open the target epic file (e.g., `Epic_12_Observability_and_Ops_LOCKED_v4.md`)
+      - Find or create "⚠️ Deferred Items from Other Epics" section
+      - Add detailed entry for the deferred item:
+        - **Deferred From:** EPIC XX - Epic Name
+        - **Priority:** P1/P2/P3
+        - **Description:** Full explanation
+        - **Implementation Approach:** Step-by-step guidance
+        - **Monitoring/Testing:** How to verify it works
+      - This ensures future developers have context when implementing
+   
+   c. **Commit Both Updates Together:**
+      ```bash
+      git add .cursor/docs/Delivery/DEFERRED_ITEMS_SUMMARY.md
+      git add .cursor/docs/Delivery/Epic_XX_*.md
+      git commit -m "docs(deferred): add EPIC YY deferred items to tracker and target epics"
+      ```
+   
+   **⚠️ IMPORTANT:** Do not defer P1 items without explicit approval. P1 items are critical for MVP.
 
 6. **✅ Update Documentation**
    - Update `DEVELOPMENT_GUIDE.md` status table
@@ -284,9 +314,12 @@ CREATE TABLE users (
 
 ### ✅ DO:
 - Check `EPIC_EXECUTION_PLAN.md` before starting work
+- Check `DEFERRED_ITEMS_SUMMARY.md` before planning an epic
 - Reference epics in function/component docstrings
 - Link to specific user stories when implementing features
 - Update epic status after completion
+- **Document ALL deferred items in review (P1/P2/P3)**
+- **Update DEFERRED_ITEMS_SUMMARY.md and target epic specs**
 - Check epic dependencies before starting
 
 ### ❌ DON'T:
@@ -294,6 +327,8 @@ CREATE TABLE users (
 - Implement features without checking epic requirements
 - Ignore epic dependencies
 - Forget to update status trackers
+- **Skip documenting deferred items (causes work to be forgotten)**
+- **Defer P1 items without approval**
 
 ---
 
