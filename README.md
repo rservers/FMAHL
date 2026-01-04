@@ -146,9 +146,44 @@ npm run email:test
 
 ## 📚 Documentation
 
-- Architecture and design docs: `.cursor/docs/`
-- Epics and delivery plans: `.cursor/docs/Delivery/`
-- Product requirements: `.cursor/docs/Products/`
+### Getting Started
+
+| Document | Purpose |
+|----------|---------|
+| `.cursor/docs/DEVELOPMENT_GUIDE.md` | **Start here!** Development workflow |
+| `.cursor/docs/Delivery/EPIC_EXECUTION_PLAN.md` | **Epic order & dependencies** |
+
+### Epic Status
+
+| Phase | Epic | Name | Status |
+|-------|------|------|--------|
+| 1 | 01 | Platform Foundation | ✅ Done |
+| 2 | 10 | Email Infrastructure | ⬜ **Next** |
+| 2 | 04 | Competition Levels | ⬜ Pending |
+| 2 | 07 | Billing & Payments | ⬜ Pending |
+| 3 | 02 | Lead Intake | ⬜ Pending |
+| 3 | 05 | Filters & Eligibility | ⬜ Pending |
+| 3 | 03 | Admin Lead Review | ⬜ Pending |
+| 4 | 06 | Distribution Engine | ⬜ Pending |
+| 5 | 08-09 | Provider UX & Refunds | ⬜ Pending |
+| 6 | 11-12 | Reporting & Ops | ⬜ Pending |
+
+### Product Requirements
+- `Document_0_Product_Overview.md` - Product vision
+- `Document_1_PRD_MVP.md` - MVP requirements
+- `Document_4_Technical_Architecture.md` - System architecture
+
+### Delivery Epics
+- `EPIC_EXECUTION_PLAN.md` - **Epic order & timeline**
+- `build_plan_mvp_epics.md` - Epic summaries
+- `Epic_01` through `Epic_12` - Detailed epic specs
+
+### Email & Auth Flows (EPIC 10)
+- Verification: `POST /api/v1/auth/register`, `POST /api/v1/auth/resend-verification`
+- Password reset: `POST /api/v1/auth/forgot-password`
+- Webhook: `POST /api/v1/webhooks/ses` (SNS → SES events)
+- Admin: `/api/v1/admin/email-templates`, `/api/v1/admin/email-events`
+- Local email UI: MailHog http://localhost:8025
 
 ## 🚢 Deployment
 

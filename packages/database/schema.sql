@@ -2,27 +2,125 @@
 CREATE EXTENSION IF NOT EXISTS postgis;
 
 -- ============================================
--- USERS & AUTHENTICATION
+-- USERS & AUTHENTICATION (EPIC 01)
 -- ============================================
 
-CREATE TYPE user_role AS ENUM ('admin', 'provider', 'end_user');
+-- User roles including system actor for background jobs
+CREATE TYPE user_role AS ENUM ('admin', 'provider', 'end_user', 'system');
+
+-- User account status for access control
+CREATE TYPE user_status AS ENUM ('pending', 'active', 'suspended', 'deactivated');
 
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   role user_role NOT NULL DEFAULT 'end_user',
+  status user_status NOT NULL DEFAULT 'pending',
+  
+  -- Profile
   first_name VARCHAR(100),
   last_name VARCHAR(100),
   phone VARCHAR(20),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  
+  -- Email verification (EPIC 01)
+  email_verified BOOLEAN NOT NULL DEFAULT false,
+  email_verification_token_hash VARCHAR(255),
+  email_verification_expires_at TIMESTAMPTZ,
+  
+  -- Password reset (EPIC 01)
+  password_reset_token_hash VARCHAR(255),
+  password_reset_expires_at TIMESTAMPTZ,
+  
+  -- MFA for admin accounts (EPIC 01)
+  mfa_secret VARCHAR(255),
+  mfa_enabled BOOLEAN NOT NULL DEFAULT false,
+  
+  -- Timestamps
   last_login_at TIMESTAMPTZ,
-  is_active BOOLEAN NOT NULL DEFAULT true
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- User indexes
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_users_status ON users(status);
+
+-- Token lookup indexes (partial indexes for non-null values)
+CREATE INDEX idx_users_email_verification_token_hash 
+  ON users(email_verification_token_hash) 
+  WHERE email_verification_token_hash IS NOT NULL;
+
+CREATE INDEX idx_users_password_reset_token_hash 
+  ON users(password_reset_token_hash) 
+  WHERE password_reset_token_hash IS NOT NULL;
+
+-- ============================================
+-- AUDIT LOG (EPIC 01)
+-- ============================================
+
+CREATE TABLE audit_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_id UUID REFERENCES users(id),
+  actor_role VARCHAR(20),
+  action VARCHAR(100) NOT NULL,
+  entity VARCHAR(50),
+  entity_id UUID,
+  metadata JSONB,
+  admin_only_memo TEXT,
+  ip_address INET,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Audit log indexes
+CREATE INDEX idx_audit_log_actor ON audit_log(actor_id);
+CREATE INDEX idx_audit_log_entity ON audit_log(entity, entity_id);
+CREATE INDEX idx_audit_log_created ON audit_log(created_at DESC);
+CREATE INDEX idx_audit_log_action ON audit_log(action);
+
+-- ============================================
+-- EMAIL INFRASTRUCTURE (EPIC 10)
+-- ============================================
+
+-- Versioned email templates with variable metadata
+CREATE TABLE email_templates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  template_key VARCHAR(100) UNIQUE NOT NULL,
+  version INTEGER NOT NULL DEFAULT 1,
+  subject TEXT NOT NULL,
+  body_html TEXT NOT NULL,
+  body_text TEXT,
+  variables JSONB NOT NULL DEFAULT '[]', -- array of variable descriptors
+  is_active BOOLEAN DEFAULT true,
+  created_by UUID REFERENCES users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Email delivery lifecycle events
+CREATE TABLE email_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email_type VARCHAR(100) NOT NULL,
+  recipient_email VARCHAR(255) NOT NULL,
+  event_type VARCHAR(20) NOT NULL CHECK (
+    event_type IN ('queued', 'sent', 'delivered', 'opened', 'bounced', 'complained', 'failed')
+  ),
+  provider VARCHAR(50),
+  message_id VARCHAR(255),
+  template_id UUID REFERENCES email_templates(id),
+  related_entity_type VARCHAR(50),
+  related_entity_id UUID,
+  metadata JSONB,
+  error_message TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Email indexes for lookups and recent activity
+CREATE INDEX idx_email_templates_key_active ON email_templates(template_key, is_active);
+CREATE INDEX idx_email_events_entity ON email_events(related_entity_type, related_entity_id);
+CREATE INDEX idx_email_events_created ON email_events(created_at DESC);
+CREATE INDEX idx_email_events_recipient ON email_events(recipient_email);
 
 -- ============================================
 -- NICHES (Service Categories)
@@ -259,26 +357,6 @@ CREATE INDEX idx_provider_quality_provider ON provider_quality_metrics(provider_
 CREATE INDEX idx_provider_quality_status ON provider_quality_metrics(status);
 
 -- ============================================
--- AUDIT LOG
--- ============================================
-
-CREATE TABLE audit_log (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  entity_type VARCHAR(50) NOT NULL,
-  entity_id UUID NOT NULL,
-  action VARCHAR(50) NOT NULL,
-  actor_id UUID REFERENCES users(id),
-  changes JSONB,
-  metadata JSONB,
-  ip_address INET,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_audit_log_entity ON audit_log(entity_type, entity_id);
-CREATE INDEX idx_audit_log_actor ON audit_log(actor_id);
-CREATE INDEX idx_audit_log_created ON audit_log(created_at DESC);
-
--- ============================================
 -- UPDATED_AT TRIGGER
 -- ============================================
 
@@ -307,3 +385,29 @@ CREATE TRIGGER update_provider_filters_updated_at BEFORE UPDATE ON provider_filt
 
 CREATE TRIGGER update_provider_quality_metrics_updated_at BEFORE UPDATE ON provider_quality_metrics
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================
+-- SYSTEM USER SEED (EPIC 01)
+-- ============================================
+-- The system user is used for background jobs, webhooks, and automated actions.
+-- This user should be created during initial setup.
+
+INSERT INTO users (
+  id,
+  email,
+  password_hash,
+  role,
+  status,
+  email_verified,
+  first_name,
+  last_name
+) VALUES (
+  '00000000-0000-0000-0000-000000000000',
+  'system@findmeahotlead.internal',
+  '$2a$12$SYSTEM_USER_NO_LOGIN_ALLOWED',  -- Invalid hash, cannot login
+  'system',
+  'active',
+  true,
+  'System',
+  'Actor'
+) ON CONFLICT (id) DO NOTHING;

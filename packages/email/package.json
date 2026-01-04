@@ -1,15 +1,20 @@
 {
-  "name": "email",
+  "name": "@findmeahotlead/email",
   "version": "0.1.0",
   "private": true,
   "main": "index.ts",
+  "scripts": {
+    "build": "echo \"skip email package build\""
+  },
   "dependencies": {
-    "nodemailer": "^6.9.8",
     "@aws-sdk/client-ses": "^3.490.0",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "handlebars": "^4.7.8",
+    "nodemailer": "^6.9.8"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
+    "@types/handlebars": "^4.1.0",
     "@types/nodemailer": "^6.4.14",
     "typescript": "^5.3.3"
   }
