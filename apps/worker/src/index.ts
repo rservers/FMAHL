@@ -2,6 +2,7 @@ import { config } from 'dotenv'
 import { resolve } from 'path'
 import { ConnectionOptions, Queue, Worker } from 'bullmq'
 import IORedis from 'ioredis'
+import { emailWorker } from './processors/email'
 
 // Load .env.local from project root (2 levels up from this file)
 config({ path: resolve(__dirname, '../../../.env.local') })
@@ -48,6 +49,7 @@ exampleWorker.on('failed', (job, err) => {
 process.on('SIGTERM', async () => {
   console.log('🛑 Shutting down worker...')
   await exampleWorker.close()
+  await emailWorker.close()
   await redis.quit()
   process.exit(0)
 })
@@ -55,6 +57,7 @@ process.on('SIGTERM', async () => {
 process.on('SIGINT', async () => {
   console.log('🛑 Shutting down worker...')
   await exampleWorker.close()
+  await emailWorker.close()
   await redis.quit()
   process.exit(0)
 })

@@ -239,23 +239,57 @@ CREATE INDEX idx_provider_filters_location ON provider_filters USING GIST(locati
 -- LEADS
 -- ============================================
 
-CREATE TYPE lead_status AS ENUM ('pending', 'assigned', 'expired', 'refunded');
+-- EPIC 02: Lead Intake & Confirmation
+-- Lead status enum includes confirmation and approval states
+CREATE TYPE lead_status AS ENUM (
+  'pending_confirmation',  -- EPIC 02: Awaiting email confirmation
+  'pending_approval',      -- EPIC 02: Confirmed, awaiting admin review
+  'pending',               -- Legacy/fallback (maps to pending_approval)
+  'approved',              -- EPIC 03: Admin approved, ready for distribution
+  'rejected',              -- EPIC 03: Admin rejected
+  'assigned',              -- EPIC 06: Assigned to providers
+  'expired',               -- Lead expired before assignment
+  'refunded'               -- EPIC 09: Refunded due to bad lead
+);
 
 CREATE TABLE leads (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   niche_id UUID NOT NULL REFERENCES niches(id) ON DELETE RESTRICT,
   schema_id UUID REFERENCES niche_form_schemas(id),
   schema_version INTEGER NOT NULL,
-  status lead_status NOT NULL DEFAULT 'pending',
+  status lead_status NOT NULL DEFAULT 'pending_confirmation',
+  
+  -- Contact information
   submitter_name VARCHAR(255) NOT NULL,
   submitter_email VARCHAR(255) NOT NULL,
   submitter_phone VARCHAR(20),
+  
+  -- Lead data
   niche_data JSONB NOT NULL,
+  
+  -- Location data (for location-based niches)
   location_point GEOGRAPHY(POINT, 4326),
   location_address TEXT,
   location_city VARCHAR(100),
   location_state VARCHAR(50),
   location_zip VARCHAR(20),
+  
+  -- EPIC 02: Email confirmation fields
+  confirmation_token_hash VARCHAR(255),
+  confirmation_expires_at TIMESTAMPTZ,
+  confirmation_token_used BOOLEAN DEFAULT false,
+  confirmed_at TIMESTAMPTZ,
+  resend_count INTEGER DEFAULT 0,
+  last_resend_at TIMESTAMPTZ,
+  
+  -- EPIC 02: Attribution tracking
+  utm_source VARCHAR(255),
+  utm_medium VARCHAR(255),
+  utm_campaign VARCHAR(255),
+  referrer_url TEXT,
+  partner_id UUID,  -- Future partner program
+  
+  -- Metadata
   ip_address INET,
   user_agent TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -263,10 +297,15 @@ CREATE TABLE leads (
   assigned_count INTEGER NOT NULL DEFAULT 0
 );
 
+-- Indexes
 CREATE INDEX idx_leads_niche ON leads(niche_id);
 CREATE INDEX idx_leads_status ON leads(status);
 CREATE INDEX idx_leads_created ON leads(created_at DESC);
 CREATE INDEX idx_leads_location ON leads USING GIST(location_point);
+CREATE INDEX idx_leads_submitter_email ON leads(submitter_email);
+CREATE INDEX idx_leads_confirmation_token_hash 
+  ON leads(confirmation_token_hash) 
+  WHERE confirmation_token_hash IS NOT NULL;
 
 -- ============================================
 -- LEAD ASSIGNMENTS

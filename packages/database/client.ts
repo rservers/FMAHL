@@ -15,6 +15,13 @@ export const sql = postgres(DATABASE_URL, {
   max: 10,
   idle_timeout: 20,
   connect_timeout: 10,
+  onnotice: (notice) => {
+    // Handle PostgreSQL notices (like "extension already exists")
+    // These are informational and shouldn't throw
+    if (notice.severity === 'NOTICE') {
+      console.log(`📋 PostgreSQL notice: ${notice.message}`)
+    }
+  },
 })
 
 export async function testConnection() {

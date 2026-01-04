@@ -30,16 +30,16 @@ export async function GET(request: NextRequest) {
         id,
         email,
         role,
+        status,
         first_name,
         last_name,
         phone,
-        created_at,
-        is_active
+        created_at
       FROM users 
-      WHERE id = ${payload.userId}
+      WHERE id = ${payload.sub}
     `
     
-    if (!user || !user.is_active) {
+    if (!user || user.status !== 'active') {
       return NextResponse.json(
         { error: 'User not found or inactive' },
         { status: 404 }

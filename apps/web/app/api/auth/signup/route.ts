@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       email: user.email,
       role: user.role,
+      status: 'pending', // New users start as pending
     })
     console.log('✅ Token generated')
     

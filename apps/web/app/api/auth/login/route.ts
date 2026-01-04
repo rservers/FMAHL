@@ -18,9 +18,11 @@ export async function POST(request: NextRequest) {
         email,
         password_hash,
         role,
+        status,
+        email_verified,
+        mfa_enabled,
         first_name,
-        last_name,
-        is_active
+        last_name
       FROM users 
       WHERE email = ${validatedData.email}
     `
@@ -32,9 +34,24 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    if (!user.is_active) {
+    // Check account status (EPIC 01)
+    if (user.status === 'suspended') {
       return NextResponse.json(
-        { error: 'Account is inactive' },
+        { error: 'Your account has been suspended. Please contact support.' },
+        { status: 403 }
+      )
+    }
+    
+    if (user.status === 'deactivated') {
+      return NextResponse.json(
+        { error: 'Your account has been deactivated.' },
+        { status: 403 }
+      )
+    }
+    
+    if (user.status === 'pending') {
+      return NextResponse.json(
+        { error: 'Your account is pending activation.' },
         { status: 403 }
       )
     }
@@ -59,23 +76,37 @@ export async function POST(request: NextRequest) {
       WHERE id = ${user.id}
     `
     
+    // Check email verification for providers (EPIC 01)
+    if (user.role === 'provider' && !user.email_verified) {
+      return NextResponse.json(
+        { error: 'Please verify your email before logging in' },
+        { status: 403 }
+      )
+    }
+    
+    // TODO: Handle MFA for admin accounts (EPIC 01)
+    // if (user.role === 'admin' && user.mfa_enabled) {
+    //   // Return MFA challenge token instead of access token
+    // }
+    
     // Generate JWT token
     const token = signToken({
       userId: user.id,
       email: user.email,
       role: user.role,
+      status: user.status,
     })
     
     return NextResponse.json({
-      success: true,
+      access_token: token,
       user: {
         id: user.id,
         email: user.email,
         role: user.role,
-        firstName: user.first_name,
-        lastName: user.last_name,
+        status: user.status,
+        email_verified: user.email_verified,
+        mfa_enabled: user.mfa_enabled,
       },
-      token,
     })
     
   } catch (error: any) {

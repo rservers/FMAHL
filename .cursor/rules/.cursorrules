@@ -1,5 +1,32 @@
 # Find Me A Hot Lead - Cursor AI Rules
 
+## 🎯 Epic Execution Plan
+
+**ALWAYS follow the epic execution plan in order.**
+
+| Phase | Epic | Status |
+|-------|------|--------|
+| 1 | 01 - Platform Foundation | ✅ Done |
+| 2 | 10 - Email Infrastructure | ⬜ **NEXT** |
+| 2 | 04 - Competition Levels | ⬜ Pending |
+| 2 | 07 - Billing & Payments | ⬜ Pending |
+| 3 | 02, 05, 03 - Lead Pipeline | ⬜ Pending |
+| 4 | 06 - Distribution Engine | ⬜ Pending |
+| 5 | 08, 09 - Provider UX | ⬜ Pending |
+| 6 | 11, 12 - Ops & Analytics | ⬜ Pending |
+
+**Key Files:**
+- `.cursor/docs/Delivery/EPIC_EXECUTION_PLAN.md` - Full plan with dependencies
+- `.cursor/docs/DEVELOPMENT_GUIDE.md` - Development workflow
+- `.cursor/docs/Delivery/build_plan_mvp_epics.md` - Epic summaries
+
+**Before starting any work:**
+1. Check which epic you're implementing
+2. Verify it's unblocked per the execution plan
+3. Reference the epic doc in your code comments
+
+---
+
 ## Project Overview
 Multi-tenant B2B SaaS marketplace connecting service providers with qualified leads.
 First niche: VPS/Server providers. Future niches: Location-based services (plumbers, realtors, dentists).

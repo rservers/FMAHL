@@ -3,6 +3,7 @@ import { resolve } from 'path'
 import { readFileSync } from 'fs'
 import postgres from 'postgres'
 import { seedEmailTemplates } from './seeds/email-templates'
+import { seedNiches } from './seeds/niches'
 
 config({ path: resolve(__dirname, '../../.env.local') })
 
@@ -61,6 +62,52 @@ async function ensureEmailTables() {
   `)
 }
 
+async function ensureEpic02Schema() {
+  // EPIC 02: Add lead_status enum values and leads table columns idempotently
+  await sql.unsafe(`
+    DO $$ 
+    BEGIN
+      -- Add enum values if they don't exist
+      IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'pending_confirmation' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'lead_status')) THEN
+        ALTER TYPE lead_status ADD VALUE 'pending_confirmation';
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'pending_approval' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'lead_status')) THEN
+        ALTER TYPE lead_status ADD VALUE 'pending_approval';
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'approved' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'lead_status')) THEN
+        ALTER TYPE lead_status ADD VALUE 'approved';
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'rejected' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'lead_status')) THEN
+        ALTER TYPE lead_status ADD VALUE 'rejected';
+      END IF;
+    END $$;
+
+    -- Add confirmation columns if they don't exist
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS confirmation_token_hash VARCHAR(255);
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS confirmation_expires_at TIMESTAMPTZ;
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS confirmation_token_used BOOLEAN DEFAULT false;
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS confirmed_at TIMESTAMPTZ;
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS resend_count INTEGER DEFAULT 0;
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS last_resend_at TIMESTAMPTZ;
+
+    -- Add attribution columns if they don't exist
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_source VARCHAR(255);
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_medium VARCHAR(255);
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_campaign VARCHAR(255);
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS referrer_url TEXT;
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS partner_id UUID;
+
+    -- Add indexes if they don't exist
+    CREATE INDEX IF NOT EXISTS idx_leads_submitter_email ON leads(submitter_email);
+    CREATE INDEX IF NOT EXISTS idx_leads_confirmation_token_hash 
+      ON leads(confirmation_token_hash) 
+      WHERE confirmation_token_hash IS NOT NULL;
+  `)
+}
+
 async function migrate() {
   console.log('🚀 Running database migrations...\n')
 
@@ -76,6 +123,9 @@ async function migrate() {
 
     // Ensure new tables are present even if prior run existed
     await ensureEmailTables()
+    
+    // EPIC 02: Ensure lead confirmation schema updates
+    await ensureEpic02Schema()
     
     // Verify tables were created
     const tables = await sql`
@@ -95,6 +145,11 @@ async function migrate() {
     console.log('\n🌱 Seeding default email templates...')
     await seedEmailTemplates()
     console.log('✅ Email templates seed complete!')
+
+    // Seed default niches (idempotent)
+    console.log('\n🌱 Seeding default niches...')
+    await seedNiches()
+    console.log('✅ Niches seed complete!')
 
     // Verify system user was created
     const systemUser = await sql`
@@ -117,6 +172,9 @@ async function migrate() {
       // Try to ensure new tables that may not have been created previously
       await ensureEmailTables()
       
+      // EPIC 02: Ensure lead confirmation schema updates
+      await ensureEpic02Schema()
+      
       const tables = await sql`
         SELECT table_name 
         FROM information_schema.tables 
@@ -136,6 +194,11 @@ async function migrate() {
         console.log('\n🌱 Seeding default email templates...')
         await seedEmailTemplates()
         console.log('✅ Email templates seed complete!')
+
+        // Seed default niches (idempotent)
+        console.log('\n🌱 Seeding default niches...')
+        await seedNiches()
+        console.log('✅ Niches seed complete!')
       } else {
         console.error('❌ Migration failed:', error.message || error)
         process.exit(1)
