@@ -16,7 +16,8 @@ This guide explains how to work on the Find Me A Hot Lead project, including the
 |-------|------|------|--------|
 | 1 | 01 | Platform Foundation | ✅ **DONE** |
 | 2 | 10 | Email Infrastructure | ✅ **DONE** |
-| 3 | 02 | Lead Intake & Confirmation | ⬜ **NEXT** |
+| 3 | 02 | Lead Intake & Confirmation | ✅ **DONE** |
+| 3 | 03 | Admin Lead Review | ⬜ **NEXT** |
 | 2 | 04 | Competition Levels | ⬜ Pending |
 | 2 | 07 | Billing & Payments | ⬜ Pending |
 | 3 | 02 | Lead Intake | ⬜ Pending |
