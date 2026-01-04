@@ -673,6 +673,30 @@ CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log(action);
 
 ---
 
+### Rate Limiting for Admin Lead Review Routes
+**Deferred From:** EPIC 03 - Admin Lead Review & Approval  
+**Priority:** P2  
+**Description:** Admin lead review routes don't have endpoint-specific rate limiting applied.
+
+**Routes to add rate limiting:**
+- `PATCH /api/v1/admin/leads/:id/approve` - Admin approve lead
+- `PATCH /api/v1/admin/leads/:id/reject` - Admin reject lead
+- `POST /api/v1/admin/leads/bulk-approve` - Bulk approve
+- `POST /api/v1/admin/leads/bulk-reject` - Bulk reject
+- `GET /api/v1/admin/leads/:id` - Get lead detail
+- `GET /api/v1/admin/leads/queue` - Get lead queue
+- `GET /api/v1/admin/leads/queue/stats` - Get queue stats
+
+**Recommendation:** Apply endpoint-specific rate limits:
+- Admin approve/reject: 100 req/min per admin
+- Admin bulk operations: 30 req/min per admin (more expensive)
+- Admin lead detail: 200 req/min per admin (read-heavy)
+- Admin queue/stats: 200 req/min per admin (read-heavy)
+
+**Status:** To be implemented alongside other EPIC 01 enhancements.
+
+---
+
 ## Dependencies
 - None (foundational)
 

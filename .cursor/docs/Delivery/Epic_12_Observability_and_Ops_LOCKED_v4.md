@@ -298,6 +298,39 @@ Example:
 
 ---
 
+### Email Queue Monitoring (P2)
+**Deferred From:** EPIC 10 - Email Infrastructure  
+**Priority:** P2  
+**Description:** The email queue (BullMQ) needs monitoring for production operations to ensure email delivery reliability.
+
+**Metrics to Track:**
+- **Queue depth:** Alert if >1000 emails queued
+- **Dead letter queue size:** Alert if >10 emails in DLQ
+- **Email send rate:** Track emails/minute for SES limit compliance
+- **Failed job count:** Alert on repeated failures for same email
+- **Job processing time:** Track P50/P95/P99 latency
+
+**Implementation Guidance:**
+- Expose BullMQ metrics endpoint in worker (`/metrics`)
+- Integrate with Prometheus/Grafana
+- Add alerting rules:
+  - Queue depth > 1000 for 5 minutes
+  - DLQ size > 10
+  - Failed job rate > 5% over 10 minutes
+- Create dashboard for email operations
+- Monitor job retry counts and backoff behavior
+
+**Expected Dashboards:**
+- Email queue depth over time
+- Email send rate (emails/min)
+- Job success/failure rate
+- Processing time distribution
+- DLQ size over time
+
+**Status:** To be implemented in EPIC 12 monitoring infrastructure.
+
+---
+
 ## Definition of Done
 
 - All endpoints implemented with schemas
