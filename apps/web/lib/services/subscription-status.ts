@@ -33,11 +33,20 @@ export async function checkAndUpdateSubscriptionStatus(providerId: string): Prom
       JOIN competition_levels cl ON cls.competition_level_id = cl.id
       WHERE cls.provider_id = ${providerId}
         AND cls.deleted_at IS NULL
+        AND cls.is_active = true
     `
 
-    // TODO: EPIC 07 - Get actual provider balance
-    // For now, stub: always assume balance is sufficient
-    const providerBalanceCents = 999999 // Stub: always sufficient
+    // EPIC 07: Get actual provider balance
+    const [provider] = await sql`
+      SELECT balance FROM providers WHERE id = ${providerId}
+    `
+    
+    if (!provider) {
+      return
+    }
+    
+    const providerBalance = parseFloat(provider.balance.toString())
+    const providerBalanceCents = Math.round(providerBalance * 100)
 
     for (const subscription of subscriptions) {
       const pricePerLead = subscription.price_per_lead_cents

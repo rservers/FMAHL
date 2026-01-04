@@ -21,7 +21,11 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
-    "typescript": "^5.3.3",
-    "tsx": "^4.7.0"
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@paypal/checkout-server-sdk": "^1.0.3",
+    "stripe": "^20.1.0"
   }
 }

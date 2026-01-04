@@ -120,6 +120,32 @@ See `.env.example` for all available environment variables. Key variables:
 - `JWT_SECRET` - Secret key for JWT tokens
 - `EMAIL_PROVIDER` - Email provider (`mailhog` for local dev)
 
+### Billing & Payments (EPIC 07)
+
+**Stripe:**
+- `STRIPE_SECRET_KEY` - Stripe secret key (test mode: `sk_test_...`)
+- `STRIPE_WEBHOOK_SECRET` - Stripe webhook signing secret (`whsec_...`)
+- `STRIPE_SUCCESS_URL` - Success redirect URL (default: `http://localhost:3000/billing/success`)
+- `STRIPE_CANCEL_URL` - Cancel redirect URL (default: `http://localhost:3000/billing/cancel`)
+
+**PayPal:**
+- `PAYPAL_CLIENT_ID` - PayPal client ID
+- `PAYPAL_CLIENT_SECRET` - PayPal client secret
+- `PAYPAL_MODE` - PayPal mode (`sandbox` or `live`, default: `sandbox`)
+- `PAYPAL_SUCCESS_URL` - Success redirect URL
+- `PAYPAL_CANCEL_URL` - Cancel redirect URL
+
+**Billing Configuration:**
+- `MIN_DEPOSIT_USD` - Minimum deposit amount (default: `10.00`)
+
+**Note:** For local development, you can use dummy values:
+```env
+STRIPE_SECRET_KEY=sk_test_dummy
+STRIPE_WEBHOOK_SECRET=whsec_dummy
+PAYPAL_CLIENT_ID=dummy
+PAYPAL_CLIENT_SECRET=dummy
+```
+
 ## 🗄️ Database
 
 The database uses PostgreSQL with PostGIS extension for location-based features.
@@ -158,12 +184,14 @@ npm run email:test
 | Phase | Epic | Name | Status |
 |-------|------|------|--------|
 | 1 | 01 | Platform Foundation | ✅ Done |
-| 2 | 10 | Email Infrastructure | ⬜ **Next** |
-| 2 | 04 | Competition Levels | ⬜ Pending |
-| 2 | 07 | Billing & Payments | ⬜ Pending |
-| 3 | 02 | Lead Intake | ⬜ Pending |
-| 3 | 05 | Filters & Eligibility | ⬜ Pending |
-| 3 | 03 | Admin Lead Review | ⬜ Pending |
+| 1 | 01 | Platform Foundation | ✅ Done |
+| 2 | 10 | Email Infrastructure | ✅ Done |
+| 3 | 02 | Lead Intake | ✅ Done |
+| 3 | 03 | Admin Lead Review | ✅ Done |
+| 2 | 04 | Competition Levels | ✅ Done |
+| 3 | 05 | Filters & Eligibility | ✅ Done |
+| 2 | 07 | Billing & Payments | ✅ Done |
+| 4 | 06 | Distribution Engine | ⬜ **Next** |
 | 4 | 06 | Distribution Engine | ⬜ Pending |
 | 5 | 08-09 | Provider UX & Refunds | ⬜ Pending |
 | 6 | 11-12 | Reporting & Ops | ⬜ Pending |
@@ -184,6 +212,14 @@ npm run email:test
 - Webhook: `POST /api/v1/webhooks/ses` (SNS → SES events)
 - Admin: `/api/v1/admin/email-templates`, `/api/v1/admin/email-events`
 - Local email UI: MailHog http://localhost:8025
+
+### Billing & Payments (EPIC 07)
+- Provider deposits: `POST /api/v1/provider/deposits` (Stripe/PayPal)
+- Billing history: `GET /api/v1/provider/billing/history`
+- Webhooks: `POST /api/v1/webhooks/stripe`, `POST /api/v1/webhooks/paypal`
+- Admin refunds: `POST /api/v1/admin/lead-assignments/:id/refund`
+- Admin balance adjustments: `POST /api/v1/admin/providers/:id/balance-adjust`
+- Admin billing oversight: `GET /api/v1/admin/billing/providers`, `GET /api/v1/admin/payments`
 
 ## 🚢 Deployment
 

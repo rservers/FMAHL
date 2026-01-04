@@ -271,6 +271,13 @@ CREATE TABLE providers (
   website_url VARCHAR(500),
   status provider_status NOT NULL DEFAULT 'pending',
   stripe_customer_id VARCHAR(255),
+  -- EPIC 07: Balance fields
+  balance DECIMAL(10,2) NOT NULL DEFAULT 0.00 CHECK (balance >= 0),
+  low_balance_threshold DECIMAL(10,2),
+  low_balance_alert_sent BOOLEAN DEFAULT FALSE,
+  auto_topup_enabled BOOLEAN DEFAULT FALSE,
+  auto_topup_threshold DECIMAL(10,2),
+  auto_topup_amount DECIMAL(10,2),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(user_id, niche_id)
@@ -436,18 +443,58 @@ CREATE INDEX idx_lead_assignments_provider ON lead_assignments(provider_id);
 CREATE INDEX idx_lead_assignments_assigned_at ON lead_assignments(assigned_at DESC);
 
 -- ============================================
+-- PAYMENTS (EPIC 07)
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS payments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  provider_id UUID NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
+  provider_name VARCHAR(50) NOT NULL CHECK (provider_name IN ('stripe', 'paypal')),
+  external_payment_id VARCHAR(255) NOT NULL,
+  amount DECIMAL(10,2) NOT NULL,
+  currency VARCHAR(3) NOT NULL DEFAULT 'USD',
+  status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'completed', 'failed', 'refunded')),
+  metadata JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT uq_payments_provider_external UNIQUE(provider_name, external_payment_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_payments_provider_status 
+  ON payments(provider_id, status, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_payments_external_id 
+  ON payments(external_payment_id);
+
+CREATE INDEX IF NOT EXISTS idx_payments_provider_created 
+  ON payments(provider_id, created_at DESC);
+
+-- ============================================
 -- PROVIDER LEDGER (Financial Transactions)
 -- ============================================
 
-CREATE TYPE transaction_type AS ENUM ('deposit', 'lead_purchase', 'refund', 'adjustment');
+-- EPIC 07: Updated transaction types
+CREATE TYPE transaction_type AS ENUM ('deposit', 'lead_purchase', 'refund', 'manual_credit', 'manual_debit');
 
 CREATE TABLE provider_ledger (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   provider_id UUID NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
-  subscription_id UUID NOT NULL REFERENCES provider_subscriptions(id) ON DELETE CASCADE,
+  -- EPIC 07: subscription_id nullable, add related entities
+  subscription_id UUID REFERENCES competition_level_subscriptions(id),
   transaction_type transaction_type NOT NULL,
-  amount_cents INTEGER NOT NULL,
-  balance_after_cents INTEGER NOT NULL,
+  -- EPIC 07: Use DECIMAL instead of cents
+  amount DECIMAL(10,2) NOT NULL,
+  balance_after DECIMAL(10,2) NOT NULL,
+  -- EPIC 07: Related entities
+  related_lead_id UUID REFERENCES leads(id),
+  related_subscription_id UUID REFERENCES competition_level_subscriptions(id),
+  related_payment_id UUID REFERENCES payments(id),
+  -- EPIC 07: Actor tracking
+  actor_id UUID REFERENCES users(id),
+  actor_role VARCHAR(20) CHECK (actor_role IN ('system', 'admin', 'provider')),
+  -- EPIC 07: Memo for manual adjustments
+  memo TEXT,
+  -- Legacy fields (keep for backward compatibility)
   lead_assignment_id UUID REFERENCES lead_assignments(id),
   stripe_payment_intent_id VARCHAR(255),
   description TEXT,
@@ -458,6 +505,9 @@ CREATE TABLE provider_ledger (
 CREATE INDEX idx_provider_ledger_provider ON provider_ledger(provider_id);
 CREATE INDEX idx_provider_ledger_subscription ON provider_ledger(subscription_id);
 CREATE INDEX idx_provider_ledger_created ON provider_ledger(created_at DESC);
+-- EPIC 07: Additional indexes for performance
+CREATE INDEX idx_provider_ledger_provider_created ON provider_ledger(provider_id, created_at DESC);
+CREATE INDEX idx_provider_ledger_payment ON provider_ledger(related_payment_id) WHERE related_payment_id IS NOT NULL;
 
 -- ============================================
 -- LEAD FEEDBACK

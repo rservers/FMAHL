@@ -74,6 +74,15 @@ export const AuditActions = {
   FILTER_UPDATED: 'filter.updated',
   FILTER_INVALIDATED: 'filter.invalidated',
   FILTER_MEMO_UPDATED: 'filter.memo_updated',
+  
+  // Billing actions (EPIC 07)
+  DEPOSIT_INITIATED: 'deposit.initiated',
+  DEPOSIT_COMPLETED: 'deposit.completed',
+  DEPOSIT_FAILED: 'deposit.failed',
+  LEAD_CHARGED: 'lead.charged',
+  REFUND_PROCESSED: 'refund.processed',
+  BALANCE_ADJUSTED: 'balance.adjusted',
+  LOW_BALANCE_ALERT_SENT: 'low_balance.alert_sent',
 } as const
 
 export type AuditAction = typeof AuditActions[keyof typeof AuditActions]

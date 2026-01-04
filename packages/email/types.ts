@@ -33,6 +33,9 @@ export type TemplateKey =
   | 'subscription_reactivated'
   | 'filter_updated'
   | 'filter_invalidated'
+  | 'deposit_completed'
+  | 'low_balance_alert'
+  | 'refund_processed'
 
 export interface TemplateVariable {
   name: string

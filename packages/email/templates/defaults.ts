@@ -270,5 +270,73 @@ You will not receive leads until your filters are updated.`,
       { name: 'level_name', required: true },
     ],
   },
+  deposit_completed: {
+    key: 'deposit_completed',
+    subject: 'Deposit completed successfully',
+    html: `<p>Hi {{provider_name}},</p>
+<p>Your deposit of <strong>{{amount}} {{currency}}</strong> has been completed successfully.</p>
+<p>Your account balance has been updated. You can now receive leads.</p>
+<p>View your billing history: <a href="{{billing_url}}">Billing History</a></p>`,
+    text: `Hi {{provider_name}},
+
+Your deposit of {{amount}} {{currency}} has been completed successfully.
+
+Your account balance has been updated. You can now receive leads.
+
+View your billing history: {{billing_url}}`,
+    variables: [
+      { name: 'provider_name', required: true },
+      { name: 'amount', required: true },
+      { name: 'currency', required: true },
+      { name: 'billing_url', required: false },
+    ],
+  },
+  low_balance_alert: {
+    key: 'low_balance_alert',
+    subject: 'Low balance alert',
+    html: `<p>Hi {{provider_name}},</p>
+<p>Your account balance is below your threshold of <strong>{{threshold}} {{currency}}</strong>.</p>
+<p>Current balance: <strong>{{balance}} {{currency}}</strong></p>
+<p>Please add funds to avoid service interruption. <a href="{{deposit_url}}">Add Funds</a></p>`,
+    text: `Hi {{provider_name}},
+
+Your account balance is below your threshold of {{threshold}} {{currency}}.
+
+Current balance: {{balance}} {{currency}}
+
+Please add funds to avoid service interruption. Add funds: {{deposit_url}}`,
+    variables: [
+      { name: 'provider_name', required: true },
+      { name: 'balance', required: true },
+      { name: 'threshold', required: true },
+      { name: 'currency', required: true },
+      { name: 'deposit_url', required: false },
+    ],
+  },
+  refund_processed: {
+    key: 'refund_processed',
+    subject: 'Refund processed',
+    html: `<p>Hi {{provider_name}},</p>
+<p>A refund of <strong>{{amount}} {{currency}}</strong> has been processed for your account.</p>
+<p>Reason: {{refund_reason}}</p>
+<p>Your account balance has been updated.</p>
+<p>View your billing history: <a href="{{billing_url}}">Billing History</a></p>`,
+    text: `Hi {{provider_name}},
+
+A refund of {{amount}} {{currency}} has been processed for your account.
+
+Reason: {{refund_reason}}
+
+Your account balance has been updated.
+
+View your billing history: {{billing_url}}`,
+    variables: [
+      { name: 'provider_name', required: true },
+      { name: 'amount', required: true },
+      { name: 'currency', required: true },
+      { name: 'refund_reason', required: true },
+      { name: 'billing_url', required: false },
+    ],
+  },
 }
 

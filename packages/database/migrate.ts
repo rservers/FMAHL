@@ -240,6 +240,143 @@ async function ensureEpic05Schema() {
   `)
 }
 
+async function ensureEpic07Schema() {
+  // EPIC 07: Add balance columns to providers, create payments table, update provider_ledger
+  await sql.unsafe(`
+    -- Add balance columns to providers if they don't exist
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'providers' AND column_name = 'balance') THEN
+        ALTER TABLE providers ADD COLUMN balance DECIMAL(10,2) NOT NULL DEFAULT 0.00 CHECK (balance >= 0);
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'providers' AND column_name = 'low_balance_threshold') THEN
+        ALTER TABLE providers ADD COLUMN low_balance_threshold DECIMAL(10,2);
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'providers' AND column_name = 'low_balance_alert_sent') THEN
+        ALTER TABLE providers ADD COLUMN low_balance_alert_sent BOOLEAN DEFAULT FALSE;
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'providers' AND column_name = 'auto_topup_enabled') THEN
+        ALTER TABLE providers ADD COLUMN auto_topup_enabled BOOLEAN DEFAULT FALSE;
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'providers' AND column_name = 'auto_topup_threshold') THEN
+        ALTER TABLE providers ADD COLUMN auto_topup_threshold DECIMAL(10,2);
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'providers' AND column_name = 'auto_topup_amount') THEN
+        ALTER TABLE providers ADD COLUMN auto_topup_amount DECIMAL(10,2);
+      END IF;
+    END $$;
+
+    -- Create payments table if it doesn't exist
+    CREATE TABLE IF NOT EXISTS payments (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      provider_id UUID NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
+      provider_name VARCHAR(50) NOT NULL CHECK (provider_name IN ('stripe', 'paypal')),
+      external_payment_id VARCHAR(255) NOT NULL,
+      amount DECIMAL(10,2) NOT NULL,
+      currency VARCHAR(3) NOT NULL DEFAULT 'USD',
+      status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'completed', 'failed', 'refunded')),
+      metadata JSONB,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      CONSTRAINT uq_payments_provider_external UNIQUE(provider_name, external_payment_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_payments_provider_status 
+      ON payments(provider_id, status, created_at DESC);
+
+    CREATE INDEX IF NOT EXISTS idx_payments_external_id 
+      ON payments(external_payment_id);
+
+    CREATE INDEX IF NOT EXISTS idx_payments_provider_created 
+      ON payments(provider_id, created_at DESC);
+
+    -- Update provider_ledger: Add new columns if they don't exist
+    DO $$ BEGIN
+      -- Make subscription_id nullable (if not already)
+      IF EXISTS (SELECT 1 FROM information_schema.columns 
+                 WHERE table_name = 'provider_ledger' AND column_name = 'subscription_id' AND is_nullable = 'NO') THEN
+        ALTER TABLE provider_ledger ALTER COLUMN subscription_id DROP NOT NULL;
+      END IF;
+      
+      -- Add related_lead_id
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'provider_ledger' AND column_name = 'related_lead_id') THEN
+        ALTER TABLE provider_ledger ADD COLUMN related_lead_id UUID REFERENCES leads(id);
+      END IF;
+      
+      -- Add related_subscription_id
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'provider_ledger' AND column_name = 'related_subscription_id') THEN
+        ALTER TABLE provider_ledger ADD COLUMN related_subscription_id UUID REFERENCES competition_level_subscriptions(id);
+      END IF;
+      
+      -- Add related_payment_id
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'provider_ledger' AND column_name = 'related_payment_id') THEN
+        ALTER TABLE provider_ledger ADD COLUMN related_payment_id UUID REFERENCES payments(id);
+      END IF;
+      
+      -- Add actor_id
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'provider_ledger' AND column_name = 'actor_id') THEN
+        ALTER TABLE provider_ledger ADD COLUMN actor_id UUID REFERENCES users(id);
+      END IF;
+      
+      -- Add actor_role
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'provider_ledger' AND column_name = 'actor_role') THEN
+        ALTER TABLE provider_ledger ADD COLUMN actor_role VARCHAR(20) CHECK (actor_role IN ('system', 'admin', 'provider'));
+      END IF;
+      
+      -- Add memo
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'provider_ledger' AND column_name = 'memo') THEN
+        ALTER TABLE provider_ledger ADD COLUMN memo TEXT;
+      END IF;
+      
+      -- Update transaction_type enum if needed (add manual_credit, manual_debit)
+      -- Note: PostgreSQL doesn't support ALTER TYPE ADD VALUE in transaction, so we'll handle this separately
+    END $$;
+
+    -- Add indexes for provider_ledger
+    CREATE INDEX IF NOT EXISTS idx_provider_ledger_provider_created 
+      ON provider_ledger(provider_id, created_at DESC);
+
+    CREATE INDEX IF NOT EXISTS idx_provider_ledger_payment 
+      ON provider_ledger(related_payment_id) WHERE related_payment_id IS NOT NULL;
+  `)
+  
+  // Update transaction_type enum (must be done separately due to PostgreSQL limitation)
+  try {
+    await sql.unsafe(`
+      DO $$ BEGIN
+        -- Add manual_credit if it doesn't exist
+        IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'manual_credit' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'transaction_type')) THEN
+          ALTER TYPE transaction_type ADD VALUE 'manual_credit';
+        END IF;
+        
+        -- Add manual_debit if it doesn't exist
+        IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'manual_debit' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'transaction_type')) THEN
+          ALTER TYPE transaction_type ADD VALUE 'manual_debit';
+        END IF;
+      END $$;
+    `)
+  } catch (error: any) {
+    // Enum values might already exist, continue
+    console.log('Note: Transaction type enum update:', error.message)
+  }
+}
+
 async function migrate() {
   console.log('🚀 Running database migrations...\n')
 
@@ -267,6 +404,9 @@ async function migrate() {
     
     // EPIC 05: Ensure filter schema
     await ensureEpic05Schema()
+    
+    // EPIC 07: Ensure billing schema
+    await ensureEpic07Schema()
     
     // Verify tables were created
     const tables = await sql`
@@ -324,6 +464,9 @@ async function migrate() {
       
       // EPIC 05: Ensure filter schema
       await ensureEpic05Schema()
+      
+      // EPIC 07: Ensure billing schema
+      await ensureEpic07Schema()
       
       const tables = await sql`
         SELECT table_name 
