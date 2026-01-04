@@ -13,8 +13,8 @@ import { notificationPreferencesSchema } from '@/lib/validations/provider-leads'
 import { sql } from '@/lib/db'
 import type { NotificationPreferences } from '@/lib/types/provider-leads'
 
-export const GET = withAuth(
-  async (request: NextRequest, user) => {
+export async function GET(request: NextRequest) {
+  return withAuth(request, async (user) => {
     try {
       // Get provider
       const [provider] = await sql`
@@ -47,12 +47,11 @@ export const GET = withAuth(
         { status: 500 }
       )
     }
-  },
-  { allowedRoles: ['provider'] }
-)
+  }, { allowedRoles: ['provider'] })
+}
 
-export const PATCH = withAuth(
-  async (request: NextRequest, user) => {
+export async function PATCH(request: NextRequest) {
+  return withAuth(request, async (user) => {
     try {
       // Parse request body
       const body = await request.json()
@@ -128,7 +127,6 @@ export const PATCH = withAuth(
         { status: 500 }
       )
     }
-  },
-  { allowedRoles: ['provider'] }
-)
+  }, { allowedRoles: ['provider'] })
+}
 

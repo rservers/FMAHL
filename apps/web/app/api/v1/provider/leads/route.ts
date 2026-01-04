@@ -12,8 +12,8 @@ import { providerInboxQuerySchema } from '@/lib/validations/provider-leads'
 import { sql } from '@/lib/db'
 import type { ProviderLeadAssignment, ProviderInboxResponse } from '@/lib/types/provider-leads'
 
-export const GET = withAuth(
-  async (request: NextRequest, user) => {
+export async function GET(request: NextRequest) {
+  return withAuth(request, async (user) => {
     try {
       // Parse query parameters
       const url = new URL(request.url)
@@ -55,48 +55,18 @@ export const GET = withAuth(
 
       const providerId = provider.id
 
-      // Build WHERE conditions
-      const conditions: string[] = [`la.provider_id = '${providerId}'`]
+      // Build query with parameterized conditions (SQL injection safe)
+      const offset = (page - 1) * limit
 
-      if (status) {
-        conditions.push(`la.status = '${status}'`)
-      }
-
-      if (niche_id) {
-        conditions.push(`l.niche_id = '${niche_id}'`)
-      }
-
-      if (date_from) {
-        conditions.push(`la.assigned_at >= '${date_from}'`)
-      }
-
-      if (date_to) {
-        conditions.push(`la.assigned_at <= '${date_to}'`)
-      }
-
-      if (search) {
-        const searchLower = search.toLowerCase()
-        conditions.push(
-          `(LOWER(l.contact_email) LIKE '%${searchLower}%' OR l.contact_phone LIKE '%${search}%')`
-        )
-      }
-
-      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
-
-      // Get total count
-      const [countResult] = await sql.unsafe(`
+      // Build WHERE conditions dynamically using sql template
+      let countQuery = sql`
         SELECT COUNT(*) as total
         FROM lead_assignments la
         JOIN leads l ON la.lead_id = l.id
-        ${whereClause}
-      `)
+        WHERE la.provider_id = ${providerId}
+      `
 
-      const totalCount = Number(countResult.total)
-      const totalPages = Math.ceil(totalCount / limit)
-      const offset = (page - 1) * limit
-
-      // Get paginated results
-      const assignments = await sql.unsafe(`
+      let dataQuery = sql`
         SELECT 
           la.id as assignment_id,
           la.lead_id,
@@ -115,10 +85,43 @@ export const GET = withAuth(
         FROM lead_assignments la
         JOIN leads l ON la.lead_id = l.id
         JOIN niches n ON l.niche_id = n.id
-        ${whereClause}
-        ORDER BY la.assigned_at DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `)
+        WHERE la.provider_id = ${providerId}
+      `
+
+      if (status) {
+        countQuery = sql`${countQuery} AND la.status = ${status}`
+        dataQuery = sql`${dataQuery} AND la.status = ${status}`
+      }
+
+      if (niche_id) {
+        countQuery = sql`${countQuery} AND l.niche_id = ${niche_id}`
+        dataQuery = sql`${dataQuery} AND l.niche_id = ${niche_id}`
+      }
+
+      if (date_from) {
+        countQuery = sql`${countQuery} AND la.assigned_at >= ${date_from}`
+        dataQuery = sql`${dataQuery} AND la.assigned_at >= ${date_from}`
+      }
+
+      if (date_to) {
+        countQuery = sql`${countQuery} AND la.assigned_at <= ${date_to}`
+        dataQuery = sql`${dataQuery} AND la.assigned_at <= ${date_to}`
+      }
+
+      if (search) {
+        const searchPattern = `%${search}%`
+        countQuery = sql`${countQuery} AND (LOWER(l.contact_email) LIKE LOWER(${searchPattern}) OR l.contact_phone LIKE ${searchPattern})`
+        dataQuery = sql`${dataQuery} AND (LOWER(l.contact_email) LIKE LOWER(${searchPattern}) OR l.contact_phone LIKE ${searchPattern})`
+      }
+
+      // Get total count
+      const [countResult] = await countQuery
+
+      const totalCount = Number(countResult.total)
+      const totalPages = Math.ceil(totalCount / limit)
+
+      // Get paginated results
+      const assignments = await sql`${dataQuery} ORDER BY la.assigned_at DESC LIMIT ${limit} OFFSET ${offset}`
 
       const items: ProviderLeadAssignment[] = assignments.map((row: any) => ({
         assignment_id: row.assignment_id,
@@ -153,7 +156,6 @@ export const GET = withAuth(
         { status: 500 }
       )
     }
-  },
-  { allowedRoles: ['provider'] }
-)
+  }, { allowedRoles: ['provider'] })
+}
 

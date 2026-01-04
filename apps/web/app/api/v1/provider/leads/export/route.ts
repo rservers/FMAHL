@@ -15,8 +15,8 @@ import { logAction, AuditActions } from '@/lib/services/audit-logger'
 import { RateLimits, checkRateLimit } from '@/lib/middleware/rate-limit'
 import type { LeadExportRequest, LeadExportResponse } from '@/lib/types/provider-leads'
 
-export const POST = withAuth(
-  async (request: NextRequest, user) => {
+export async function POST(request: NextRequest) {
+  return withAuth(request, async (user) => {
     try {
       // Check daily export limit
       const redis = getRedis()
@@ -24,17 +24,15 @@ export const POST = withAuth(
       
       const rateLimitResult = await checkRateLimit(
         rateLimitKey,
-        RateLimits.PROVIDER_EXPORT.limit,
-        RateLimits.PROVIDER_EXPORT.windowSeconds
+        RateLimits.PROVIDER_EXPORT
       )
 
       if (!rateLimitResult.allowed) {
-        const resetAt = new Date(Date.now() + rateLimitResult.retryAfter * 1000).toISOString()
         return NextResponse.json(
           {
             error: 'Export limit exceeded',
             limit: RateLimits.PROVIDER_EXPORT.limit,
-            reset_at: resetAt,
+            remaining: rateLimitResult.remaining,
           },
           { status: 429 }
         )
@@ -69,33 +67,31 @@ export const POST = withAuth(
 
       const providerId = provider.id
 
-      // Estimate row count
-      const conditions: string[] = [`la.provider_id = '${providerId}'`]
-
-      if (filters?.status) {
-        conditions.push(`la.status = '${filters.status}'`)
-      }
-
-      if (filters?.date_from) {
-        conditions.push(`la.assigned_at >= '${filters.date_from}'`)
-      }
-
-      if (filters?.date_to) {
-        conditions.push(`la.assigned_at <= '${filters.date_to}'`)
-      }
-
-      if (filters?.niche_id) {
-        conditions.push(`l.niche_id = '${filters.niche_id}'`)
-      }
-
-      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
-
-      const [countResult] = await sql.unsafe(`
+      // Estimate row count with parameterized query (SQL injection safe)
+      let countQuery = sql`
         SELECT COUNT(*) as total
         FROM lead_assignments la
         JOIN leads l ON la.lead_id = l.id
-        ${whereClause}
-      `)
+        WHERE la.provider_id = ${providerId}
+      `
+
+      if (filters?.status) {
+        countQuery = sql`${countQuery} AND la.status = ${filters.status}`
+      }
+
+      if (filters?.date_from) {
+        countQuery = sql`${countQuery} AND la.assigned_at >= ${filters.date_from}`
+      }
+
+      if (filters?.date_to) {
+        countQuery = sql`${countQuery} AND la.assigned_at <= ${filters.date_to}`
+      }
+
+      if (filters?.niche_id) {
+        countQuery = sql`${countQuery} AND l.niche_id = ${filters.niche_id}`
+      }
+
+      const [countResult] = await countQuery
 
       const estimatedRows = Number(countResult.total)
 
@@ -148,7 +144,6 @@ export const POST = withAuth(
         { status: 500 }
       )
     }
-  },
-  { allowedRoles: ['provider'] }
-)
+  }, { allowedRoles: ['provider'] })
+}
 

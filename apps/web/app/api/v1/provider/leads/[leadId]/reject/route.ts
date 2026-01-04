@@ -13,24 +13,20 @@ import { sql } from '@/lib/db'
 import { logAction, AuditActions } from '@/lib/services/audit-logger'
 import { emailService } from '@findmeahotlead/email'
 
-export const POST = withAuth(
-  async (request: NextRequest, user) => {
+export async function POST(
+  request: NextRequest,
+  context: { params: Promise<{ leadId: string }> }
+) {
+  const { leadId } = await context.params
+
+  // Validate UUID format
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (!uuidRegex.test(leadId)) {
+    return NextResponse.json({ error: 'Invalid lead ID format' }, { status: 400 })
+  }
+
+  return withAuth(request, async (user) => {
     try {
-      // Extract lead ID from URL
-      const url = new URL(request.url)
-      const pathParts = url.pathname.split('/')
-      const rejectIndex = pathParts.indexOf('reject')
-      const leadId = rejectIndex > 0 ? pathParts[rejectIndex - 1] : null
-
-      if (!leadId) {
-        return NextResponse.json({ error: 'Lead ID is required' }, { status: 400 })
-      }
-
-      // Validate UUID format
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-      if (!uuidRegex.test(leadId)) {
-        return NextResponse.json({ error: 'Invalid lead ID format' }, { status: 400 })
-      }
 
       // Parse request body
       const body = await request.json()
@@ -196,7 +192,6 @@ export const POST = withAuth(
         { status: 500 }
       )
     }
-  },
-  { allowedRoles: ['provider'] }
-)
+  }, { allowedRoles: ['provider'] })
+}
 
