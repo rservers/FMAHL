@@ -27,6 +27,8 @@ export type TemplateKey =
   | 'bad_lead_approved'
   | 'bad_lead_rejected'
   | 'admin_lead_pending'
+  | 'lead_approved'
+  | 'lead_rejected'
 
 export interface TemplateVariable {
   name: string

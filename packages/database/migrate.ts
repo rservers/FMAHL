@@ -108,6 +108,24 @@ async function ensureEpic02Schema() {
   `)
 }
 
+async function ensureEpic03Schema() {
+  // EPIC 03: Add admin approval/rejection fields and indexes idempotently
+  await sql.unsafe(`
+    -- Add admin approval/rejection columns if they don't exist
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ;
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS approved_by UUID REFERENCES users(id);
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS rejected_at TIMESTAMPTZ;
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS rejected_by UUID REFERENCES users(id);
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS admin_notes TEXT;
+
+    -- Add indexes if they don't exist
+    CREATE INDEX IF NOT EXISTS idx_leads_status_created ON leads(status, created_at);
+    CREATE INDEX IF NOT EXISTS idx_leads_approved_at ON leads(approved_at) WHERE approved_at IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS idx_leads_rejected_at ON leads(rejected_at) WHERE rejected_at IS NOT NULL;
+  `)
+}
+
 async function migrate() {
   console.log('🚀 Running database migrations...\n')
 
@@ -126,6 +144,9 @@ async function migrate() {
     
     // EPIC 02: Ensure lead confirmation schema updates
     await ensureEpic02Schema()
+    
+    // EPIC 03: Ensure admin approval schema updates
+    await ensureEpic03Schema()
     
     // Verify tables were created
     const tables = await sql`
@@ -174,6 +195,9 @@ async function migrate() {
       
       // EPIC 02: Ensure lead confirmation schema updates
       await ensureEpic02Schema()
+      
+      // EPIC 03: Ensure admin approval schema updates
+      await ensureEpic03Schema()
       
       const tables = await sql`
         SELECT table_name 

@@ -289,6 +289,14 @@ CREATE TABLE leads (
   referrer_url TEXT,
   partner_id UUID,  -- Future partner program
   
+  -- EPIC 03: Admin approval/rejection fields
+  approved_at TIMESTAMPTZ,
+  approved_by UUID REFERENCES users(id),
+  rejected_at TIMESTAMPTZ,
+  rejected_by UUID REFERENCES users(id),
+  rejection_reason TEXT,
+  admin_notes TEXT,
+  
   -- Metadata
   ip_address INET,
   user_agent TEXT,
@@ -306,6 +314,11 @@ CREATE INDEX idx_leads_submitter_email ON leads(submitter_email);
 CREATE INDEX idx_leads_confirmation_token_hash 
   ON leads(confirmation_token_hash) 
   WHERE confirmation_token_hash IS NOT NULL;
+
+-- EPIC 03: Admin query indexes
+CREATE INDEX idx_leads_status_created ON leads(status, created_at);
+CREATE INDEX idx_leads_approved_at ON leads(approved_at) WHERE approved_at IS NOT NULL;
+CREATE INDEX idx_leads_rejected_at ON leads(rejected_at) WHERE rejected_at IS NOT NULL;
 
 -- ============================================
 -- LEAD ASSIGNMENTS

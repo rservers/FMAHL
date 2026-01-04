@@ -161,5 +161,47 @@ Niche: {{niche_name}}`,
       { name: 'niche_name', required: true },
     ],
   },
+  lead_approved: {
+    key: 'lead_approved',
+    subject: 'Your request has been approved!',
+    html: `<p>Hi {{contact_name}},</p>
+<p>Great news! Your request for {{niche_name}} has been approved.</p>
+<p>We're connecting you with qualified providers. You should hear from them within 24-48 hours.</p>
+<p>Thank you for using Find Me A Hot Lead!</p>`,
+    text: `Hi {{contact_name}},
+
+Great news! Your request for {{niche_name}} has been approved.
+
+We're connecting you with qualified providers. You should hear from them within 24-48 hours.
+
+Thank you for using Find Me A Hot Lead!`,
+    variables: [
+      { name: 'contact_name', required: true },
+      { name: 'niche_name', required: true },
+    ],
+  },
+  lead_rejected: {
+    key: 'lead_rejected',
+    subject: 'Update on your request',
+    html: `<p>Hi {{contact_name}},</p>
+<p>Thank you for your interest in {{niche_name}}.</p>
+<p>Unfortunately, we're unable to process your request at this time.</p>
+<p>Reason: {{rejection_reason}}</p>
+<p>If you have questions, please contact our support team.</p>`,
+    text: `Hi {{contact_name}},
+
+Thank you for your interest in {{niche_name}}.
+
+Unfortunately, we're unable to process your request at this time.
+
+Reason: {{rejection_reason}}
+
+If you have questions, please contact our support team.`,
+    variables: [
+      { name: 'contact_name', required: true },
+      { name: 'niche_name', required: true },
+      { name: 'rejection_reason', required: true },
+    ],
+  },
 }
 
