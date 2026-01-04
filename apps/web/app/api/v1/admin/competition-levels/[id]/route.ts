@@ -15,6 +15,7 @@ import { adminWithMFA } from '@/lib/middleware/mfa'
 import { updateCompetitionLevelSchema } from '@/lib/validations/competition-levels'
 import { sql } from '@/lib/db'
 import { logAction, AuditActions } from '@/lib/services/audit-logger'
+import { adminCompetitionLevelUpdateRateLimit, addRateLimitHeaders } from '@/lib/middleware/rate-limit'
 
 export const GET = adminWithMFA(async (request: NextRequest) => {
   try {
@@ -76,6 +77,16 @@ export const GET = adminWithMFA(async (request: NextRequest) => {
 
 export const PATCH = adminWithMFA(async (request: NextRequest, user: any) => {
   try {
+    // Check rate limit
+    const rateLimitResult = await adminCompetitionLevelUpdateRateLimit(user.id)
+    if (!rateLimitResult.allowed) {
+      const response = NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      )
+      return addRateLimitHeaders(response, rateLimitResult)
+    }
+
     // Extract ID from URL path
     const url = new URL(request.url)
     const pathParts = url.pathname.split('/')
@@ -255,7 +266,7 @@ export const PATCH = adminWithMFA(async (request: NextRequest, user: any) => {
       },
     })
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       id: updatedLevel.id,
       niche_id: updatedLevel.niche_id,
       name: updatedLevel.name,
@@ -266,6 +277,8 @@ export const PATCH = adminWithMFA(async (request: NextRequest, user: any) => {
       is_active: updatedLevel.is_active,
       updated_at: updatedLevel.updated_at.toISOString(),
     })
+
+    return addRateLimitHeaders(response, rateLimitResult)
 
   } catch (error: any) {
     console.error('Update competition level error:', error)

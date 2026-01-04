@@ -104,6 +104,41 @@ export const RateLimits = {
     windowSeconds: 60, // 1 minute
     keyPrefix: 'ratelimit:lead_confirm',
   } as RateLimitConfig,
+
+  /** Admin competition level create: 100 per user per minute (EPIC 04) */
+  ADMIN_COMPETITION_LEVEL_CREATE: {
+    limit: 100,
+    windowSeconds: 60, // 1 minute
+    keyPrefix: 'ratelimit:admin_cl_create',
+  } as RateLimitConfig,
+
+  /** Admin competition level update: 100 per user per minute (EPIC 04) */
+  ADMIN_COMPETITION_LEVEL_UPDATE: {
+    limit: 100,
+    windowSeconds: 60, // 1 minute
+    keyPrefix: 'ratelimit:admin_cl_update',
+  } as RateLimitConfig,
+
+  /** Admin competition level reorder: 50 per user per minute (EPIC 04) */
+  ADMIN_COMPETITION_LEVEL_REORDER: {
+    limit: 50,
+    windowSeconds: 60, // 1 minute
+    keyPrefix: 'ratelimit:admin_cl_reorder',
+  } as RateLimitConfig,
+
+  /** Provider subscribe: 30 per user per minute (EPIC 04) */
+  PROVIDER_SUBSCRIBE: {
+    limit: 30,
+    windowSeconds: 60, // 1 minute
+    keyPrefix: 'ratelimit:provider_subscribe',
+  } as RateLimitConfig,
+
+  /** Provider unsubscribe: 30 per user per minute (EPIC 04) */
+  PROVIDER_UNSUBSCRIBE: {
+    limit: 30,
+    windowSeconds: 60, // 1 minute
+    keyPrefix: 'ratelimit:provider_unsubscribe',
+  } as RateLimitConfig,
 }
 
 /**
@@ -318,5 +353,40 @@ export async function leadSubmissionRateLimit(email: string): Promise<RateLimitR
 export async function leadConfirmationRateLimit(request: NextRequest): Promise<RateLimitResult> {
   const ip = getClientIP(request) || 'unknown'
   return checkRateLimit(ip, RateLimits.LEAD_CONFIRMATION)
+}
+
+/**
+ * Rate limit for admin competition level creation by user ID (EPIC 04)
+ */
+export async function adminCompetitionLevelCreateRateLimit(userId: string): Promise<RateLimitResult> {
+  return checkRateLimit(userId, RateLimits.ADMIN_COMPETITION_LEVEL_CREATE)
+}
+
+/**
+ * Rate limit for admin competition level update by user ID (EPIC 04)
+ */
+export async function adminCompetitionLevelUpdateRateLimit(userId: string): Promise<RateLimitResult> {
+  return checkRateLimit(userId, RateLimits.ADMIN_COMPETITION_LEVEL_UPDATE)
+}
+
+/**
+ * Rate limit for admin competition level reorder by user ID (EPIC 04)
+ */
+export async function adminCompetitionLevelReorderRateLimit(userId: string): Promise<RateLimitResult> {
+  return checkRateLimit(userId, RateLimits.ADMIN_COMPETITION_LEVEL_REORDER)
+}
+
+/**
+ * Rate limit for provider subscribe by user ID (EPIC 04)
+ */
+export async function providerSubscribeRateLimit(userId: string): Promise<RateLimitResult> {
+  return checkRateLimit(userId, RateLimits.PROVIDER_SUBSCRIBE)
+}
+
+/**
+ * Rate limit for provider unsubscribe by user ID (EPIC 04)
+ */
+export async function providerUnsubscribeRateLimit(userId: string): Promise<RateLimitResult> {
+  return checkRateLimit(userId, RateLimits.PROVIDER_UNSUBSCRIBE)
 }
 

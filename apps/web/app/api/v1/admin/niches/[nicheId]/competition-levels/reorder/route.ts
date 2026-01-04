@@ -13,9 +13,20 @@ import { adminWithMFA } from '@/lib/middleware/mfa'
 import { reorderCompetitionLevelsSchema } from '@/lib/validations/competition-levels'
 import { sql } from '@/lib/db'
 import { logAction, AuditActions } from '@/lib/services/audit-logger'
+import { adminCompetitionLevelReorderRateLimit, addRateLimitHeaders } from '@/lib/middleware/rate-limit'
 
 export const POST = adminWithMFA(async (request: NextRequest, user: any) => {
   try {
+    // Check rate limit
+    const rateLimitResult = await adminCompetitionLevelReorderRateLimit(user.id)
+    if (!rateLimitResult.allowed) {
+      const response = NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      )
+      return addRateLimitHeaders(response, rateLimitResult)
+    }
+
     // Extract nicheId from URL path
     const url = new URL(request.url)
     const pathParts = url.pathname.split('/')
@@ -138,7 +149,7 @@ export const POST = adminWithMFA(async (request: NextRequest, user: any) => {
       },
     })
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       levels: updatedLevels.map((level: any) => ({
         id: level.id,
         name: level.name,
@@ -150,6 +161,8 @@ export const POST = adminWithMFA(async (request: NextRequest, user: any) => {
       })),
       total: updatedLevels.length,
     })
+
+    return addRateLimitHeaders(response, rateLimitResult)
 
   } catch (error: any) {
     console.error('Reorder competition levels error:', error)

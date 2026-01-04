@@ -643,23 +643,33 @@ CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log(action);
 
 ## Deferred Items from Other Epics
 
-### Rate Limiting for EPIC 04 Routes
+### Rate Limiting for EPIC 04 Routes ✅ COMPLETED
 **Deferred From:** EPIC 04 - Competition Levels & Subscriptions  
 **Priority:** P2  
-**Description:** Competition level and subscription APIs don't have endpoint-specific rate limiting applied.
+**Completed:** Jan 4, 2026
 
-**Routes to add rate limiting:**
-- `POST /api/v1/admin/niches/:nicheId/competition-levels` - Admin create level
-- `POST /api/v1/admin/niches/:nicheId/competition-levels/reorder` - Admin reorder
-- `PATCH /api/v1/admin/competition-levels/:id` - Admin update level
-- `POST /api/v1/provider/competition-levels/:id/subscribe` - Provider subscribe
-- `POST /api/v1/provider/competition-levels/:id/unsubscribe` - Provider unsubscribe
+**Implementation:**
+- ✅ Added 5 new rate limit configurations to `rate-limit.ts`
+- ✅ Created 5 helper functions for EPIC 04 rate limits
+- ✅ Applied rate limiting to all 5 EPIC 04 routes
+- ✅ All routes return rate limit headers (X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset)
 
-**Recommendation:** Apply similar rate limits as used for other POST/PATCH operations:
-- Admin: 100 req/min
-- Provider: 30 req/min
+**Rate Limits Applied:**
+- `POST /api/v1/admin/niches/:nicheId/competition-levels` - 100 req/min per admin
+- `PATCH /api/v1/admin/competition-levels/:id` - 100 req/min per admin
+- `POST /api/v1/admin/niches/:nicheId/competition-levels/reorder` - 50 req/min per admin
+- `POST /api/v1/provider/competition-levels/:id/subscribe` - 30 req/min per provider
+- `POST /api/v1/provider/competition-levels/:id/unsubscribe` - 30 req/min per provider
 
-**Status:** To be implemented in EPIC 01 rate limiting review or as a global enhancement.
+**Files Modified:**
+- `apps/web/lib/middleware/rate-limit.ts` - Added configs and helper functions
+- `apps/web/app/api/v1/admin/niches/[nicheId]/competition-levels/route.ts` - Applied rate limiting
+- `apps/web/app/api/v1/admin/competition-levels/[id]/route.ts` - Applied rate limiting
+- `apps/web/app/api/v1/admin/niches/[nicheId]/competition-levels/reorder/route.ts` - Applied rate limiting
+- `apps/web/app/api/v1/provider/competition-levels/[id]/subscribe/route.ts` - Applied rate limiting
+- `apps/web/app/api/v1/provider/competition-levels/[id]/unsubscribe/route.ts` - Applied rate limiting
+
+**Status:** ✅ Complete and tested
 
 ---
 

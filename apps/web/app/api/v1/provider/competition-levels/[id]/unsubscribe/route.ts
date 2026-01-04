@@ -12,9 +12,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { providerOnly } from '@/lib/middleware/rbac'
 import { sql } from '@/lib/db'
 import { logAction, AuditActions } from '@/lib/services/audit-logger'
+import { providerUnsubscribeRateLimit, addRateLimitHeaders } from '@/lib/middleware/rate-limit'
 
 export const POST = providerOnly(async (request: NextRequest, user: any) => {
   try {
+    // Check rate limit
+    const rateLimitResult = await providerUnsubscribeRateLimit(user.id)
+    if (!rateLimitResult.allowed) {
+      const response = NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      )
+      return addRateLimitHeaders(response, rateLimitResult)
+    }
+
     // Extract ID from URL path
     const url = new URL(request.url)
     const pathParts = url.pathname.split('/')
@@ -85,7 +96,8 @@ export const POST = providerOnly(async (request: NextRequest, user: any) => {
       },
     })
 
-    return NextResponse.json({ success: true })
+    const response = NextResponse.json({ success: true })
+    return addRateLimitHeaders(response, rateLimitResult)
 
   } catch (error: any) {
     console.error('Unsubscribe from competition level error:', error)
