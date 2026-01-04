@@ -283,6 +283,84 @@ All MVP requirements for EPIC 05 were implemented. P3 future enhancements noted 
 
 ---
 
+## From EPIC 06 (Distribution Engine)
+
+### 1. Distribution Analytics Dashboard (P3)
+**Target Epic:** EPIC 11 - Reporting & Analytics  
+**Status:** 🔴 Not Started  
+**Effort:** 4 hours
+
+**Context:** Distribution metrics are logged but not visualized. Admins need dashboards to monitor distribution fairness, performance, and assignment trends.
+
+**Recommendation:**
+- Distribution metrics dashboard (assignments/lead, skip reasons, fairness stats)
+- Distribution success rate by niche
+- Average distribution duration trends
+- Top performers by competition level
+- Assignment trends over time
+
+**Implementation:**
+- Create admin dashboard page
+- Query audit logs for distribution metrics
+- Visualize with charts (Chart.js or similar)
+- Add filtering by date range, niche, competition level
+
+**Expected Impact:**
+- Better visibility into distribution performance
+- Identify distribution bottlenecks
+- Monitor fairness algorithm effectiveness
+
+---
+
+### 2. Distribution Metrics Export (P3)
+**Target Epic:** EPIC 11 - Reporting & Analytics  
+**Status:** 🔴 Not Started  
+**Effort:** 2 hours
+
+**Context:** Admins need to export distribution history for external analysis and reporting.
+
+**Recommendation:**
+- CSV export of distribution history
+- Include: lead ID, niche, start level, assignments created, skipped providers, duration, timestamp
+- Support date range filtering
+- Limit to 10,000 distributions per export
+
+**Implementation:**
+- Add `GET /api/v1/admin/distribution/export` endpoint
+- Query audit logs and lead tables
+- Use csv-stringify for output
+- Stream large exports
+- Add audit log for exports
+
+---
+
+### 3. Real-time Distribution Status (P3)
+**Target Epic:** EPIC 12 - Observability & Ops  
+**Status:** 🔴 Not Started  
+**Effort:** 3 hours
+
+**Context:** Distribution status endpoint requires polling. Real-time updates would improve UX for admins monitoring distributions.
+
+**Recommendation:**
+- WebSocket endpoint for distribution status updates
+- Real-time progress updates during distribution
+- Live assignment creation notifications
+- Distribution queue depth monitoring
+
+**Implementation:**
+- Add WebSocket support to Next.js
+- Create distribution status WebSocket handler
+- Emit events from distribution processor
+- Update admin UI to use WebSocket
+- Fallback to polling if WebSocket unavailable
+
+**Expected Impact:**
+- Better admin UX for monitoring distributions
+- Reduce API polling load
+- Enable real-time troubleshooting
+
+---
+
 ## From EPIC 07 (Billing & Payments)
 
 ### 1. Balance Reconciliation Job (P3)
@@ -424,6 +502,9 @@ All MVP requirements for EPIC 05 were implemented. P3 future enhancements noted 
 - 🔴 CSV export of leads (EPIC 11) - 3 hours
 - 🔴 Redis caching for competition levels (EPIC 11) - 4 hours
 - 🔴 Template management UI (EPIC 11) - 8 hours
+- 🔴 Distribution analytics dashboard (EPIC 11) - 4 hours
+- 🔴 Distribution metrics export (EPIC 11) - 2 hours
+- 🔴 Real-time distribution status (EPIC 12) - 3 hours
 - 🔴 Scheduled subscription reactivation job (EPIC 12) - 2 hours
 - 🔴 Balance reconciliation job (EPIC 12) - 0.5 hours
 - 🔴 Payment retry logic (Future) - 1 hour
@@ -444,8 +525,8 @@ All MVP requirements for EPIC 05 were implemented. P3 future enhancements noted 
 ## Total Deferred Effort
 
 **P2 Items:** 6 hours  
-**P3 Items:** 29.5 hours  
-**Total:** 35.5 hours (~4.5 days)
+**P3 Items:** 38.5 hours  
+**Total:** 44.5 hours (~5.5 days)
 
 ---
 
@@ -530,7 +611,7 @@ grep -A 20 "⚠️ Deferred Items" .cursor/docs/Delivery/Epic_11_Reporting_Analy
 ---
 
 **Maintained By:** Development Team  
-**Last Reviewed:** Jan 4, 2026 (EPIC 06 - No deferred items for this epic)  
-**Last Updated:** Jan 4, 2026 (Added EPIC 05 & EPIC 07 items)  
+**Last Reviewed:** Jan 4, 2026 (EPIC 06 - Added 3 P3 items)  
+**Last Updated:** Jan 4, 2026 (Added EPIC 05, EPIC 06, EPIC 07 items)  
 **Next Review:** Before EPIC 08
 
