@@ -193,6 +193,7 @@ npm run email:test
 | 2 | 07 | Billing & Payments | ✅ Done |
 | 4 | 06 | Distribution Engine | ✅ Done |
 | 5 | 08 | Provider Lead Management | ✅ Done |
+| 5 | 09 | Bad Lead & Refunds | ✅ Done |
 | 5 | 08-09 | Provider UX & Refunds | ⬜ Pending |
 | 6 | 11-12 | Reporting & Ops | ⬜ Pending |
 
@@ -234,6 +235,15 @@ npm run email:test
 - Reject lead: `POST /api/v1/provider/leads/:leadId/reject` (requires reason)
 - Notification preferences: `GET /api/v1/provider/notification-preferences`, `PATCH /api/v1/provider/notification-preferences`
 - Lead export: `POST /api/v1/provider/leads/export` (5/day limit, max 5000 rows)
+
+### Bad Lead & Refunds (EPIC 09)
+- Provider report bad lead: `POST /api/v1/provider/assignments/:id/bad-lead` (5/day limit)
+- Provider bad lead history: `GET /api/v1/provider/bad-leads` (filter, paginate)
+- Admin bad lead queue: `GET /api/v1/admin/bad-leads` (filter, paginate)
+- Admin bad lead detail: `GET /api/v1/admin/bad-leads/:id`
+- Admin approve refund: `POST /api/v1/admin/bad-leads/:id/approve` (atomic refund)
+- Admin reject: `POST /api/v1/admin/bad-leads/:id/reject`
+- Admin metrics: `GET /api/v1/admin/bad-leads/metrics` (cached, abuse flags)
 
 ## 🚢 Deployment
 

@@ -293,6 +293,54 @@ async function ensureEpic06Schema() {
   `)
 }
 
+async function ensureEpic09Schema() {
+  // EPIC 09: Add bad lead & refund fields and indexes
+  await sql.unsafe(`
+    -- Add bad lead fields to lead_assignments
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'lead_assignments' AND column_name = 'bad_lead_reported_at') THEN
+        ALTER TABLE lead_assignments ADD COLUMN bad_lead_reported_at TIMESTAMPTZ;
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'lead_assignments' AND column_name = 'bad_lead_reason_category') THEN
+        ALTER TABLE lead_assignments ADD COLUMN bad_lead_reason_category VARCHAR(50)
+          CHECK (bad_lead_reason_category IN ('spam','duplicate','invalid_contact','out_of_scope','other'));
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'lead_assignments' AND column_name = 'bad_lead_reason_notes') THEN
+        ALTER TABLE lead_assignments ADD COLUMN bad_lead_reason_notes TEXT;
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'lead_assignments' AND column_name = 'bad_lead_status') THEN
+        ALTER TABLE lead_assignments ADD COLUMN bad_lead_status VARCHAR(20)
+          CHECK (bad_lead_status IN ('pending','approved','rejected'));
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'lead_assignments' AND column_name = 'refund_amount') THEN
+        ALTER TABLE lead_assignments ADD COLUMN refund_amount DECIMAL(10,2);
+      END IF;
+    END $$;
+
+    -- Add performance indexes for bad lead queries
+    CREATE INDEX IF NOT EXISTS idx_lead_assignments_bad_lead_status
+      ON lead_assignments(bad_lead_status, bad_lead_reported_at DESC)
+      WHERE bad_lead_status IS NOT NULL;
+
+    CREATE INDEX IF NOT EXISTS idx_lead_assignments_bad_lead_provider
+      ON lead_assignments(provider_id, bad_lead_status, bad_lead_reported_at DESC)
+      WHERE bad_lead_status IS NOT NULL;
+
+    CREATE INDEX IF NOT EXISTS idx_lead_assignments_provider_bad_leads
+      ON lead_assignments(provider_id, bad_lead_reported_at DESC)
+      WHERE bad_lead_reported_at IS NOT NULL;
+  `)
+}
+
 async function ensureEpic08Schema() {
   // EPIC 08: Add provider lead management fields and indexes
   await sql.unsafe(`
@@ -612,6 +660,9 @@ async function migrate() {
       
       // EPIC 08: Ensure provider lead management schema
       await ensureEpic08Schema()
+      
+      // EPIC 09: Ensure bad lead & refunds schema
+      await ensureEpic09Schema()
       
       const tables = await sql`
         SELECT table_name 

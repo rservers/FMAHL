@@ -71,6 +71,10 @@ export declare const AuditActions: {
     readonly LEAD_REJECTED_BY_PROVIDER: "lead.rejected_by_provider";
     readonly LEAD_EXPORT_REQUESTED: "lead.export_requested";
     readonly LEAD_EXPORT_COMPLETED: "lead.export_completed";
+    readonly BAD_LEAD_REPORTED: "bad_lead.reported";
+    readonly BAD_LEAD_APPROVED: "bad_lead.approved";
+    readonly BAD_LEAD_REJECTED: "bad_lead.rejected";
+    readonly BAD_LEAD_REFUND_PROCESSED: "bad_lead.refund_processed";
 };
 export type AuditAction = typeof AuditActions[keyof typeof AuditActions];
 /**

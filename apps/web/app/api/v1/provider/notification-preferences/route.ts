@@ -71,34 +71,38 @@ export async function PATCH(request: NextRequest) {
 
       const updates = validationResult.data
 
-      // Build update query using sql template
-      const updateParts: any[] = []
+      // Build update query dynamically
+      const updateFields: string[] = []
+      const updateValues: any[] = []
       
       if (updates.notify_on_new_lead !== undefined) {
-        updateParts.push(sql`notify_on_new_lead = ${updates.notify_on_new_lead}`)
+        updateFields.push('notify_on_new_lead')
+        updateValues.push(updates.notify_on_new_lead)
       }
 
       if (updates.notify_on_lead_status_change !== undefined) {
-        updateParts.push(sql`notify_on_lead_status_change = ${updates.notify_on_lead_status_change}`)
+        updateFields.push('notify_on_lead_status_change')
+        updateValues.push(updates.notify_on_lead_status_change)
       }
 
       if (updates.notify_on_bad_lead_decision !== undefined) {
-        updateParts.push(sql`notify_on_bad_lead_decision = ${updates.notify_on_bad_lead_decision}`)
+        updateFields.push('notify_on_bad_lead_decision')
+        updateValues.push(updates.notify_on_bad_lead_decision)
       }
 
-      if (updateParts.length === 0) {
+      if (updateFields.length === 0) {
         return NextResponse.json(
           { error: 'No fields to update' },
           { status: 400 }
         )
       }
 
-      // Update provider preferences
-      await sql`
-        UPDATE providers
-        SET ${sql.join(updateParts, sql`, `)}
-        WHERE user_id = ${user.id}
-      `
+      // Update provider preferences using parameterized query
+      const setClause = updateFields.map((field, idx) => `${field} = $${idx + 1}`).join(', ')
+      await sql.unsafe(
+        `UPDATE providers SET ${setClause} WHERE user_id = $${updateFields.length + 1}`,
+        [...updateValues, user.id]
+      )
 
       // Fetch updated preferences
       const [provider] = await sql`

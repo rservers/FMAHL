@@ -446,7 +446,13 @@ CREATE TABLE lead_assignments (
   accepted_at TIMESTAMPTZ,
   rejected_at TIMESTAMPTZ,
   rejection_reason TEXT,
+  -- EPIC 09: Bad lead & refunds fields
+  bad_lead_reported_at TIMESTAMPTZ,
+  bad_lead_reason_category VARCHAR(50) CHECK (bad_lead_reason_category IN ('spam','duplicate','invalid_contact','out_of_scope','other')),
+  bad_lead_reason_notes TEXT,
+  bad_lead_status VARCHAR(20) CHECK (bad_lead_status IN ('pending','approved','rejected')),
   refunded_at TIMESTAMPTZ,
+  refund_amount DECIMAL(10,2),
   refund_reason TEXT,
   UNIQUE(lead_id, provider_id)
 );
@@ -454,6 +460,19 @@ CREATE TABLE lead_assignments (
 CREATE INDEX idx_lead_assignments_lead ON lead_assignments(lead_id);
 CREATE INDEX idx_lead_assignments_provider ON lead_assignments(provider_id);
 CREATE INDEX idx_lead_assignments_assigned_at ON lead_assignments(assigned_at DESC);
+
+-- EPIC 09: Bad lead indexes
+CREATE INDEX idx_lead_assignments_bad_lead_status
+  ON lead_assignments(bad_lead_status, bad_lead_reported_at DESC)
+  WHERE bad_lead_status IS NOT NULL;
+
+CREATE INDEX idx_lead_assignments_bad_lead_provider
+  ON lead_assignments(provider_id, bad_lead_status, bad_lead_reported_at DESC)
+  WHERE bad_lead_status IS NOT NULL;
+
+CREATE INDEX idx_lead_assignments_provider_bad_leads
+  ON lead_assignments(provider_id, bad_lead_reported_at DESC)
+  WHERE bad_lead_reported_at IS NOT NULL;
 
 -- EPIC 08: Provider inbox performance indexes
 CREATE INDEX idx_lead_assignments_provider_assigned

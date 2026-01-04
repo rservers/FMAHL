@@ -39,6 +39,9 @@ export type TemplateKey =
   | 'lead_assigned'
   | 'admin_provider_rejected_lead'
   | 'lead_export_ready'
+  | 'bad_lead_reported_confirmation'
+  | 'bad_lead_approved'
+  | 'bad_lead_rejected'
 
 export interface TemplateVariable {
   name: string

@@ -408,5 +408,87 @@ This link expires at {{expires_at}}.`,
       { name: 'expires_at', required: true },
     ],
   },
+  bad_lead_reported_confirmation: {
+    key: 'bad_lead_reported_confirmation',
+    subject: 'Bad Lead Report Received - {{niche_name}}',
+    html: `<p>Hi {{provider_name}},</p>
+<p>We've received your bad lead report for lead {{lead_id}} ({{niche_name}}).</p>
+<p><strong>Reported At:</strong> {{reported_at}}</p>
+<p>Our team will review your request within 24-48 hours. You'll receive an email notification once the review is complete.</p>
+<p>Thank you for helping us maintain lead quality.</p>`,
+    text: `Hi {{provider_name}},
+
+We've received your bad lead report for lead {{lead_id}} ({{niche_name}}).
+
+Reported At: {{reported_at}}
+
+Our team will review your request within 24-48 hours. You'll receive an email notification once the review is complete.
+
+Thank you for helping us maintain lead quality.`,
+    variables: [
+      { name: 'provider_name', required: true },
+      { name: 'lead_id', required: true },
+      { name: 'niche_name', required: true },
+      { name: 'reported_at', required: true },
+    ],
+  },
+  bad_lead_approved: {
+    key: 'bad_lead_approved',
+    subject: 'Bad Lead Refund Approved - {{niche_name}}',
+    html: `<p>Hi {{provider_name}},</p>
+<p>Your bad lead report for lead {{lead_id}} ({{niche_name}}) has been approved.</p>
+<p><strong>Refund Amount:</strong> ${{refund_amount}}</p>
+<p><strong>Refunded At:</strong> {{refunded_at}}</p>
+<p><strong>New Balance:</strong> ${{new_balance}}</p>
+<p><strong>Admin Notes:</strong> {{admin_memo}}</p>
+<p>The refund has been credited to your account balance.</p>`,
+    text: `Hi {{provider_name}},
+
+Your bad lead report for lead {{lead_id}} ({{niche_name}}) has been approved.
+
+Refund Amount: ${{refund_amount}}
+Refunded At: {{refunded_at}}
+New Balance: ${{new_balance}}
+
+Admin Notes: {{admin_memo}}
+
+The refund has been credited to your account balance.`,
+    variables: [
+      { name: 'provider_name', required: true },
+      { name: 'lead_id', required: true },
+      { name: 'niche_name', required: true },
+      { name: 'refund_amount', required: true },
+      { name: 'refunded_at', required: true },
+      { name: 'new_balance', required: true },
+      { name: 'admin_memo', required: true },
+    ],
+  },
+  bad_lead_rejected: {
+    key: 'bad_lead_rejected',
+    subject: 'Bad Lead Report Review - {{niche_name}}',
+    html: `<p>Hi {{provider_name}},</p>
+<p>Your bad lead report for lead {{lead_id}} ({{niche_name}}) has been reviewed.</p>
+<p><strong>Status:</strong> Rejected</p>
+<p><strong>Reviewed At:</strong> {{reviewed_at}}</p>
+<p><strong>Admin Notes:</strong> {{admin_memo}}</p>
+<p>If you have additional concerns about this lead, please contact our support team.</p>`,
+    text: `Hi {{provider_name}},
+
+Your bad lead report for lead {{lead_id}} ({{niche_name}}) has been reviewed.
+
+Status: Rejected
+Reviewed At: {{reviewed_at}}
+
+Admin Notes: {{admin_memo}}
+
+If you have additional concerns about this lead, please contact our support team.`,
+    variables: [
+      { name: 'provider_name', required: true },
+      { name: 'lead_id', required: true },
+      { name: 'niche_name', required: true },
+      { name: 'admin_memo', required: true },
+      { name: 'reviewed_at', required: true },
+    ],
+  },
 }
 

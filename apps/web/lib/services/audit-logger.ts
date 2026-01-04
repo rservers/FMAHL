@@ -97,6 +97,12 @@ export const AuditActions = {
   LEAD_REJECTED_BY_PROVIDER: 'lead.rejected_by_provider',
   LEAD_EXPORT_REQUESTED: 'lead.export_requested',
   LEAD_EXPORT_COMPLETED: 'lead.export_completed',
+  
+  // Bad lead & refunds actions (EPIC 09)
+  BAD_LEAD_REPORTED: 'bad_lead.reported',
+  BAD_LEAD_APPROVED: 'bad_lead.approved',
+  BAD_LEAD_REJECTED: 'bad_lead.rejected',
+  BAD_LEAD_REFUND_PROCESSED: 'bad_lead.refund_processed',
 } as const
 
 export type AuditAction = typeof AuditActions[keyof typeof AuditActions]
