@@ -262,6 +262,42 @@ Example:
 
 ---
 
+## Deferred Items from Other Epics
+
+### Scheduled Job: Subscription Status Reactivation (EPIC 04)
+**Deferred From:** EPIC 04 - Competition Levels & Subscriptions  
+**Priority:** P3  
+**Description:** The `reactivateEligibleSubscriptions()` function needs to run periodically to check for providers whose balance has been restored and reactivate their subscriptions.
+
+**Job Details:**
+- **Function:** `reactivateEligibleSubscriptions()` in `apps/web/lib/services/subscription-status.ts`
+- **Schedule:** Every 5 minutes (cron: `*/5 * * * *`)
+- **Purpose:** Check all inactive subscriptions with `deactivation_reason = 'insufficient_balance'` and reactivate if balance is now sufficient
+- **Dependencies:** EPIC 07 (Billing) must be complete for actual balance checks
+
+**Implementation Approach:**
+1. Add BullMQ scheduled job in worker
+2. Create job handler that calls `reactivateEligibleSubscriptions()`
+3. Add job monitoring and alerting
+4. Log job execution to audit log (system actor)
+
+**Expected Behavior:**
+- Runs every 5 minutes
+- Queries for inactive subscriptions
+- Checks balance via EPIC 07 service
+- Reactivates eligible subscriptions
+- Sends email notifications
+- Logs all reactivations
+
+**Monitoring:**
+- Track job execution time (should be < 30s)
+- Track number of reactivations per run
+- Alert if job fails 3 times in a row
+
+**Status:** To be implemented in EPIC 12 scheduled jobs infrastructure.
+
+---
+
 ## Definition of Done
 
 - All endpoints implemented with schemas

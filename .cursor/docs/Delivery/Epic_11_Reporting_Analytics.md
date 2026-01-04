@@ -586,6 +586,40 @@ CREATE INDEX IF NOT EXISTS idx_report_exports_status_created
 
 ---
 
+## Deferred Items from Other Epics
+
+### Redis Caching for EPIC 04 Data
+**Deferred From:** EPIC 04 - Competition Levels & Subscriptions  
+**Priority:** P3  
+**Description:** Competition levels and provider subscriptions are read frequently but change rarely. Adding Redis caching would improve performance.
+
+**Data to cache:**
+- Competition levels per niche (TTL: 1 hour)
+  - Key: `cache:competition_levels:niche:{niche_id}`
+  - Invalidate on: create/update/delete/reorder level
+  
+- Provider subscriptions (TTL: 5 minutes)
+  - Key: `cache:provider_subscriptions:{provider_id}`
+  - Invalidate on: subscribe/unsubscribe
+  
+- Email templates (TTL: 6 hours)
+  - Key: `cache:email_template:{template_key}`
+  - Invalidate on: template update
+
+**Expected Impact:**
+- Reduce DB queries by ~60% for competition level lookups
+- Improve API response time from ~50ms to ~5ms for cached reads
+
+**Implementation Approach:**
+1. Add cache layer in API routes (check cache → fetch DB → set cache)
+2. Add cache invalidation in write operations
+3. Use Redis `GET`/`SET` with TTL
+4. Monitor cache hit rate via metrics
+
+**Status:** To be implemented in EPIC 11 caching infrastructure.
+
+---
+
 # Definition of Done
 
 - All report endpoints implemented with RBAC; admin endpoints enforce MFA
