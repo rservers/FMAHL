@@ -31,6 +31,8 @@ export type TemplateKey =
   | 'lead_rejected'
   | 'subscription_deactivated'
   | 'subscription_reactivated'
+  | 'filter_updated'
+  | 'filter_invalidated'
 
 export interface TemplateVariable {
   name: string

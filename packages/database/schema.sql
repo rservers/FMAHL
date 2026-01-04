@@ -207,7 +207,11 @@ CREATE TABLE competition_level_subscriptions (
   subscribed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  deleted_at TIMESTAMPTZ
+  deleted_at TIMESTAMPTZ,
+  -- EPIC 05: Filter fields
+  filter_rules JSONB,
+  filter_updated_at TIMESTAMPTZ,
+  filter_is_valid BOOLEAN NOT NULL DEFAULT true
 );
 
 -- Provider can only subscribe once per level (when not deleted)
@@ -218,6 +222,38 @@ CREATE UNIQUE INDEX idx_cls_provider_level_unique
 CREATE INDEX idx_cls_provider ON competition_level_subscriptions(provider_id) WHERE deleted_at IS NULL;
 CREATE INDEX idx_cls_level ON competition_level_subscriptions(competition_level_id) WHERE deleted_at IS NULL;
 CREATE INDEX idx_cls_active ON competition_level_subscriptions(competition_level_id, is_active) WHERE deleted_at IS NULL;
+
+-- EPIC 05: Filter-related indexes
+CREATE INDEX idx_cls_filter_updated ON competition_level_subscriptions(filter_updated_at DESC) WHERE filter_rules IS NOT NULL AND deleted_at IS NULL;
+CREATE INDEX idx_cls_filter_invalid ON competition_level_subscriptions(filter_is_valid) WHERE filter_is_valid = false AND deleted_at IS NULL;
+CREATE INDEX idx_cls_filter_rules_gin ON competition_level_subscriptions USING GIN (filter_rules) WHERE filter_rules IS NOT NULL;
+
+-- ============================================
+-- SUBSCRIPTION FILTER LOGS (EPIC 05)
+-- ============================================
+
+CREATE TABLE subscription_filter_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  subscription_id UUID NOT NULL REFERENCES competition_level_subscriptions(id) ON DELETE CASCADE,
+  actor_id UUID REFERENCES users(id),
+  actor_role VARCHAR(20) NOT NULL CHECK (actor_role IN ('admin', 'provider', 'system')),
+  old_filter_rules JSONB,
+  new_filter_rules JSONB,
+  admin_only_memo TEXT,
+  memo_updated_at TIMESTAMPTZ,
+  memo_updated_by UUID REFERENCES users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_subscription_filter_logs_subscription_created
+  ON subscription_filter_logs(subscription_id, created_at DESC);
+
+CREATE INDEX idx_subscription_filter_logs_actor
+  ON subscription_filter_logs(actor_id, created_at DESC);
+
+CREATE INDEX idx_subscription_filter_logs_memo_fts
+  ON subscription_filter_logs USING GIN (to_tsvector('english', admin_only_memo))
+  WHERE admin_only_memo IS NOT NULL;
 
 -- ============================================
 -- PROVIDERS

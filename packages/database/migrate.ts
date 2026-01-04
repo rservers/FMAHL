@@ -180,6 +180,66 @@ async function ensureEpic04Schema() {
   `)
 }
 
+async function ensureEpic05Schema() {
+  // EPIC 05: Add filter columns and create subscription_filter_logs table
+  await sql.unsafe(`
+    -- Add filter columns to competition_level_subscriptions if they don't exist
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'competition_level_subscriptions' AND column_name = 'filter_rules') THEN
+        ALTER TABLE competition_level_subscriptions ADD COLUMN filter_rules JSONB;
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'competition_level_subscriptions' AND column_name = 'filter_updated_at') THEN
+        ALTER TABLE competition_level_subscriptions ADD COLUMN filter_updated_at TIMESTAMPTZ;
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name = 'competition_level_subscriptions' AND column_name = 'filter_is_valid') THEN
+        ALTER TABLE competition_level_subscriptions ADD COLUMN filter_is_valid BOOLEAN NOT NULL DEFAULT true;
+      END IF;
+    END $$;
+
+    -- Create subscription_filter_logs table if it doesn't exist
+    CREATE TABLE IF NOT EXISTS subscription_filter_logs (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      subscription_id UUID NOT NULL REFERENCES competition_level_subscriptions(id) ON DELETE CASCADE,
+      actor_id UUID REFERENCES users(id),
+      actor_role VARCHAR(20) NOT NULL CHECK (actor_role IN ('admin', 'provider', 'system')),
+      old_filter_rules JSONB,
+      new_filter_rules JSONB,
+      admin_only_memo TEXT,
+      memo_updated_at TIMESTAMPTZ,
+      memo_updated_by UUID REFERENCES users(id),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    -- Create indexes if they don't exist
+    CREATE INDEX IF NOT EXISTS idx_subscription_filter_logs_subscription_created
+      ON subscription_filter_logs(subscription_id, created_at DESC);
+
+    CREATE INDEX IF NOT EXISTS idx_subscription_filter_logs_actor
+      ON subscription_filter_logs(actor_id, created_at DESC);
+
+    CREATE INDEX IF NOT EXISTS idx_subscription_filter_logs_memo_fts
+      ON subscription_filter_logs USING GIN (to_tsvector('english', admin_only_memo))
+      WHERE admin_only_memo IS NOT NULL;
+
+    CREATE INDEX IF NOT EXISTS idx_cls_filter_updated 
+      ON competition_level_subscriptions(filter_updated_at DESC) 
+      WHERE filter_rules IS NOT NULL AND deleted_at IS NULL;
+
+    CREATE INDEX IF NOT EXISTS idx_cls_filter_invalid 
+      ON competition_level_subscriptions(filter_is_valid) 
+      WHERE filter_is_valid = false AND deleted_at IS NULL;
+
+    CREATE INDEX IF NOT EXISTS idx_cls_filter_rules_gin 
+      ON competition_level_subscriptions USING GIN (filter_rules) 
+      WHERE filter_rules IS NOT NULL;
+  `)
+}
+
 async function migrate() {
   console.log('🚀 Running database migrations...\n')
 
@@ -204,6 +264,9 @@ async function migrate() {
     
     // EPIC 04: Ensure competition levels schema
     await ensureEpic04Schema()
+    
+    // EPIC 05: Ensure filter schema
+    await ensureEpic05Schema()
     
     // Verify tables were created
     const tables = await sql`
@@ -258,6 +321,9 @@ async function migrate() {
       
       // EPIC 04: Ensure competition levels schema
       await ensureEpic04Schema()
+      
+      // EPIC 05: Ensure filter schema
+      await ensureEpic05Schema()
       
       const tables = await sql`
         SELECT table_name 

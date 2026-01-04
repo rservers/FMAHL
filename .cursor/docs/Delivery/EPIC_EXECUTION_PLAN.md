@@ -186,24 +186,23 @@ EPIC 01 ✅ → EPIC 10 ✅ → EPIC 02 ✅ → EPIC 03 ✅ → EPIC 04 ✅ → 
 
 ## Next Epic Recommendation
 
-**Current Status:** EPIC 01, 10, 02, 03, 04 are complete ✅
+**Current Status:** EPIC 01, 10, 02, 03, 04, 05 are complete ✅
 
-### Next Epic: EPIC 05 (Filters & Eligibility)
+### Next Epic: EPIC 07 (Billing & Payments)
 
-**Why EPIC 05:**
-- Depends on EPIC 01 ✅ and EPIC 04 ✅ (both complete)
+**Why EPIC 07:**
+- Depends on EPIC 01 ✅ (complete)
 - Required for EPIC 06 (Distribution Engine)
-- Defines provider eligibility rules
-- ~2-3 days effort
+- Manages provider balances and payments
+- ~3-4 days effort
 
-**Before Starting EPIC 05:**
-1. ✅ Check deferred items tracker - No deferred items for EPIC 05
-2. 🔴 **OPTIONAL:** Complete EPIC 01 deferred item (admin lead rate limiting - 2 hours)
-3. ✅ Review EPIC 05 specification
+**Before Starting EPIC 07:**
+1. ✅ Check deferred items tracker
+2. ✅ Review EPIC 07 specification
 
 **Alternative Path:**
-- Could do EPIC 07 (Billing) in parallel with EPIC 05
-- Both are needed for EPIC 06 (Distribution Engine)
+- Could do EPIC 06 (Distribution Engine) if EPIC 07 is deferred
+- EPIC 06 depends on EPIC 04, 05, 07
 
 ---
 
@@ -216,7 +215,7 @@ EPIC 01 ✅ → EPIC 10 ✅ → EPIC 02 ✅ → EPIC 03 ✅ → EPIC 04 ✅ → 
 | 3 | 02 | Lead Intake & Confirmation | ✅ Done | - | Jan 4, 2026 | Jan 4, 2026 |
 | 3 | 03 | Admin Lead Review | ✅ Done | - | Jan 4, 2026 | Jan 4, 2026 |
 | 2 | 04 | Competition Levels | ✅ Done | - | Jan 4, 2026 | Jan 4, 2026 |
-| 3 | 05 | Filters & Eligibility | ⬜ **NEXT** | - | | |
+| 3 | 05 | Filters & Eligibility | ✅ Done | - | Jan 4, 2026 | Jan 4, 2026 |
 | 2 | 07 | Billing & Payments | ⬜ Pending | - | | |
 | 4 | 06 | Distribution Engine | ⬜ Pending | - | | |
 | 5 | 08 | Provider Dashboard | ⬜ Pending | - | | |

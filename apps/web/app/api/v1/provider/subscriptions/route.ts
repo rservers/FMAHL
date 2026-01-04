@@ -78,6 +78,8 @@ export const GET = providerOnly(async (request: NextRequest, user: any) => {
         cls.competition_level_id,
         cls.is_active,
         cls.subscribed_at,
+        cls.filter_rules,
+        cls.filter_is_valid,
         cl.niche_id,
         n.name as niche_name,
         cl.name as level_name,
@@ -107,6 +109,8 @@ export const GET = providerOnly(async (request: NextRequest, user: any) => {
         max_recipients: sub.max_recipients,
         is_active: sub.is_active,
         subscribed_at: sub.subscribed_at.toISOString(),
+        has_filters: sub.filter_rules !== null && sub.filter_rules !== undefined,
+        filter_is_valid: sub.filter_is_valid ?? true,
       })),
       pagination: {
         page,

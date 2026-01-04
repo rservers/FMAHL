@@ -19,7 +19,7 @@ This guide explains how to work on the Find Me A Hot Lead project, including the
 | 3 | 02 | Lead Intake & Confirmation | ✅ **DONE** | - |
 | 3 | 03 | Admin Lead Review | ✅ **DONE** | - |
 | 3 | 04 | Competition Levels | ✅ **DONE** | - |
-| 3 | 05 | Filters & Eligibility | ⬜ **NEXT** | - |
+| 3 | 05 | Filters & Eligibility | ✅ **DONE** | - |
 | 4 | 06 | Distribution Engine | ⬜ Pending | - |
 | 2 | 07 | Billing & Payments | ⬜ Pending | - |
 | 5 | 08 | Provider Dashboard | ⬜ Pending | - |

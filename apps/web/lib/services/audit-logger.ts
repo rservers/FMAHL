@@ -69,6 +69,11 @@ export const AuditActions = {
   SUBSCRIPTION_DEACTIVATED: 'subscription.deactivated',
   SUBSCRIPTION_REACTIVATED: 'subscription.reactivated',
   SUBSCRIPTION_DELETED: 'subscription.deleted',
+  
+  // Filter actions (EPIC 05)
+  FILTER_UPDATED: 'filter.updated',
+  FILTER_INVALIDATED: 'filter.invalidated',
+  FILTER_MEMO_UPDATED: 'filter.memo_updated',
 } as const
 
 export type AuditAction = typeof AuditActions[keyof typeof AuditActions]

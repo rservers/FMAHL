@@ -231,5 +231,44 @@ You will now receive leads from this competition level again.`,
       { name: 'level_name', required: true },
     ],
   },
+  filter_updated: {
+    key: 'filter_updated',
+    subject: 'Your lead filters have been updated',
+    html: `<p>Hi {{provider_name}},</p>
+<p>Your filters for the <strong>{{level_name}}</strong> competition level have been successfully updated.</p>
+<p>Summary: {{filter_summary}}</p>
+<p>You can view and manage your filters in your provider dashboard.</p>`,
+    text: `Hi {{provider_name}},
+
+Your filters for the {{level_name}} competition level have been successfully updated.
+
+Summary: {{filter_summary}}
+
+You can view and manage your filters in your provider dashboard.`,
+    variables: [
+      { name: 'provider_name', required: true },
+      { name: 'level_name', required: true },
+      { name: 'filter_summary', required: true },
+    ],
+  },
+  filter_invalidated: {
+    key: 'filter_invalidated',
+    subject: 'Action required: Your filters need to be updated',
+    html: `<p>Hi {{provider_name}},</p>
+<p>The form schema for the <strong>{{level_name}}</strong> competition level has been updated, and your current filters are no longer valid.</p>
+<p>Please update your filters in your provider dashboard to continue receiving leads.</p>
+<p>You will not receive leads until your filters are updated.</p>`,
+    text: `Hi {{provider_name}},
+
+The form schema for the {{level_name}} competition level has been updated, and your current filters are no longer valid.
+
+Please update your filters in your provider dashboard to continue receiving leads.
+
+You will not receive leads until your filters are updated.`,
+    variables: [
+      { name: 'provider_name', required: true },
+      { name: 'level_name', required: true },
+    ],
+  },
 }
 
