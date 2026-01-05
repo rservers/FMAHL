@@ -11,8 +11,6 @@ import { adminWithMFA } from '@/lib/middleware/mfa'
 import { adminBadLeadActionSchema } from '@/lib/validations/bad-leads'
 import { sql } from '@/lib/db'
 import { logAction, AuditActions } from '@/lib/services/audit-logger'
-import { createLedgerEntry } from '@/lib/services/ledger'
-import { checkAndUpdateSubscriptionStatus } from '@/lib/services/subscription-status'
 import { emailService } from '@findmeahotlead/email'
 
 export async function POST(
@@ -48,9 +46,9 @@ export async function POST(
       const { admin_memo } = validationResult.data
 
       // Process approval with atomic refund
-      const result = await sql.begin(async (sql) => {
+      const result = await sql.begin(async (txn) => {
         // Get assignment with row-level lock
-        const [assignment] = await sql`
+        const [assignment] = await txn`
           SELECT 
             la.id,
             la.lead_id,
@@ -76,7 +74,7 @@ export async function POST(
 
         // Idempotency: If already approved, return current state
         if (assignment.bad_lead_status === 'approved') {
-          const [refundInfo] = await sql`
+          const [refundInfo] = await txn`
             SELECT refund_amount, refunded_at
             FROM lead_assignments
             WHERE id = ${assignmentId}
@@ -111,8 +109,20 @@ export async function POST(
         // Calculate refund amount (equals original charge)
         const refundAmount = Number(assignment.price_cents) / 100
 
+        // Lock provider row for balance update
+        const [provider] = await txn`
+          SELECT balance FROM providers WHERE id = ${assignment.provider_id} FOR UPDATE
+        `
+
+        if (!provider) {
+          throw new Error('Provider not found')
+        }
+
+        const currentBalance = Number(provider.balance)
+        const newBalance = currentBalance + refundAmount
+
         // Update assignment
-        await sql`
+        await txn`
           UPDATE lead_assignments
           SET 
             bad_lead_status = 'approved',
@@ -122,34 +132,77 @@ export async function POST(
           WHERE id = ${assignmentId}
         `
 
-        // Create refund ledger entry (outside transaction, uses its own transaction)
-        const ledgerEntryId = await createLedgerEntry({
-          provider_id: assignment.provider_id,
-          entry_type: 'refund',
-          amount: refundAmount,
-          related_lead_id: assignment.lead_id,
-          related_subscription_id: assignment.subscription_id,
-          related_payment_id: null,
-          actor_id: user.id,
-          actor_role: 'admin',
-          memo: `Bad lead refund: ${admin_memo}`,
-        })
-
-        // Get updated balance
-        const [provider] = await sql`
-          SELECT balance FROM providers WHERE id = ${assignment.provider_id}
+        // Create refund ledger entry (within same transaction)
+        const [ledgerEntry] = await txn`
+          INSERT INTO provider_ledger (
+            provider_id,
+            entry_type,
+            amount,
+            balance_after,
+            related_lead_id,
+            related_subscription_id,
+            actor_id,
+            actor_role,
+            memo
+          ) VALUES (
+            ${assignment.provider_id},
+            'refund',
+            ${refundAmount},
+            ${newBalance},
+            ${assignment.lead_id},
+            ${assignment.subscription_id},
+            ${user.id},
+            'admin',
+            ${'Bad lead refund: ' + admin_memo}
+          )
+          RETURNING id
         `
-        const newBalance = provider ? Number(provider.balance) : 0
 
-        // Check and update subscription status
-        await checkAndUpdateSubscriptionStatus(assignment.provider_id)
+        // Update provider balance (within same transaction)
+        await txn`
+          UPDATE providers
+          SET balance = ${newBalance}
+          WHERE id = ${assignment.provider_id}
+        `
+
+        // Check and update subscription status (within same transaction)
+        // Get active subscriptions
+        const subscriptions = await txn`
+          SELECT 
+            cls.id,
+            cls.is_active,
+            cl.price_per_lead_cents,
+            cl.name as level_name
+          FROM competition_level_subscriptions cls
+          JOIN competition_levels cl ON cls.competition_level_id = cl.id
+          WHERE cls.provider_id = ${assignment.provider_id}
+            AND cls.deleted_at IS NULL
+            AND cls.is_active = false
+            AND cls.deactivation_reason = 'insufficient_balance'
+        `
+
+        const newBalanceCents = Math.round(newBalance * 100)
+
+        // Reactivate subscriptions if balance is now sufficient
+        for (const sub of subscriptions) {
+          if (newBalanceCents >= sub.price_per_lead_cents) {
+            await txn`
+              UPDATE competition_level_subscriptions
+              SET 
+                is_active = true,
+                deactivation_reason = NULL,
+                updated_at = NOW()
+              WHERE id = ${sub.id}
+            `
+          }
+        }
 
         return {
           assignment_id: assignment.id,
           bad_lead_status: 'approved',
           refund_amount: refundAmount,
           refunded_at: new Date().toISOString(),
-          ledger_entry_id: ledgerEntryId,
+          ledger_entry_id: ledgerEntry.id,
           new_balance: newBalance,
           is_existing: false,
           niche_name: assignment.niche_name,
