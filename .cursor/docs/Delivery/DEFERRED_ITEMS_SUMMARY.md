@@ -611,7 +611,169 @@ grep -A 20 "⚠️ Deferred Items" .cursor/docs/Delivery/Epic_11_Reporting_Analy
 ---
 
 **Maintained By:** Development Team  
-**Last Reviewed:** Jan 4, 2026 (EPIC 08 - Added 3 P3 items)  
-**Last Updated:** Jan 4, 2026 (Added EPIC 05, EPIC 06, EPIC 07, EPIC 08 items)  
-**Next Review:** Before EPIC 09
+**Last Reviewed:** Jan 5, 2026 (EPIC 11 - Added 8 items: 5 P2, 3 P3)  
+**Last Updated:** Jan 5, 2026 (Added EPIC 11 production recommendations)  
+**Next Review:** Before EPIC 12
+
+---
+
+## From EPIC 11 (Reporting & Analytics)
+
+### 1. Implement S3 Storage for Report Exports (P2)
+**Target Epic:** EPIC 12 - Observability & Ops (or Future Technical Debt Epic)  
+**Status:** 🔴 Not Started  
+**Effort:** 3 hours
+
+**Context:**
+Currently, report exports are stored in Redis with 24-hour expiration. This works for MVP but has limitations:
+- Redis memory constraints for large exports
+- Not designed for file storage
+- No long-term archival capability
+
+**Implementation:**
+- Configure AWS S3 bucket (or compatible object storage)
+- Update `storeExportFile()` in `apps/worker/src/processors/report-export.ts`
+- Generate signed URLs for secure downloads
+- Implement file lifecycle policies (auto-deletion after retention period)
+- Update environment variables (S3_BUCKET, AWS_REGION, etc.)
+
+**Priority Justification:** P2 - Current solution works but not scalable for production traffic
+
+---
+
+### 2. Add Pagination for Time-Series Endpoints (P2)
+**Target Epic:** Future Enhancement Epic  
+**Status:** 🔴 Not Started  
+**Effort:** 2 hours
+
+**Context:**
+Time-series endpoints (funnel, distribution metrics) can return unbounded result sets for large date ranges. No `max_results` or pagination implemented.
+
+**Affected Endpoints:**
+- `GET /api/v1/admin/reports/funnel`
+- `GET /api/v1/admin/reports/revenue` (if expanded to daily breakdown)
+
+**Implementation:**
+- Add `max_results` parameter (default 90 for day bucket, 168 for hour bucket)
+- Add pagination parameters (`page`, `limit`)
+- Return pagination metadata in response
+- Document limits in API docs
+
+**Priority Justification:** P2 - Risk of performance issues with large date ranges
+
+---
+
+### 3. Enhance Error Logging with Structured Logging (P2)
+**Target Epic:** EPIC 12 - Observability & Ops  
+**Status:** 🔴 Not Started  
+**Effort:** 2 hours
+
+**Context:**
+Current error handling uses `console.error()` with generic messages. Should implement structured logging with error codes and context.
+
+**Implementation:**
+- Integrate logging library (Winston, Pino, or similar)
+- Add error codes for different failure types
+- Log to audit_log for critical operations
+- Include request context (user, endpoint, timestamp)
+- Set up log aggregation (Datadog, Splunk, or similar)
+
+**Priority Justification:** P2 - Important for production debugging and monitoring
+
+---
+
+### 4. Set Up Query Performance Monitoring (P2)
+**Target Epic:** EPIC 12 - Observability & Ops  
+**Status:** 🔴 Not Started  
+**Effort:** 3 hours
+
+**Context:**
+No query performance monitoring in place. Should track slow queries and set up alerts.
+
+**Implementation:**
+- Add query timing middleware
+- Log slow queries (>1000ms threshold)
+- Set up database query monitoring (pg_stat_statements)
+- Create performance dashboard
+- Set up alerts for degraded performance
+
+**Priority Justification:** P2 - Critical for maintaining performance at scale
+
+---
+
+### 5. Create OpenAPI/Swagger Documentation (P2)
+**Target Epic:** EPIC 12 - Observability & Ops  
+**Status:** 🔴 Not Started  
+**Effort:** 3 hours
+
+**Context:**
+No API documentation for reporting endpoints. Should provide OpenAPI spec for developer experience.
+
+**Implementation:**
+- Set up Swagger UI or ReDoc
+- Document all 10 reporting endpoints
+- Include request/response schemas
+- Add authentication documentation
+- Provide example requests/responses
+- Host at `/api/docs`
+
+**Priority Justification:** P2 - Important for API consumers and maintainability
+
+---
+
+### 6. Implement XLSX Export Format (P3)
+**Target Epic:** Future Enhancement Epic  
+**Status:** 🔴 Not Started  
+**Effort:** 2 hours
+
+**Context:**
+Currently only CSV exports supported. XLSX provides better formatting and multi-sheet support.
+
+**Implementation:**
+- Add `exceljs` or `xlsx` library dependency
+- Update export processor to handle XLSX format
+- Add proper cell formatting (dates, numbers, currencies)
+- Support multiple sheets for complex exports
+- Update MIME types and file extensions
+
+**Priority Justification:** P3 - Nice-to-have, CSV sufficient for MVP
+
+---
+
+### 7. Optimize Competition Level Caching (P3)
+**Target Epic:** Future Optimization Epic  
+**Status:** 🔴 Not Started  
+**Effort:** 2 hours
+
+**Context:**
+Part of deferred item from EPIC 04. Report caching implemented, but competition level data not yet cached.
+
+**Implementation:**
+- Cache competition level list with TTL
+- Cache individual level details
+- Invalidate cache on level updates
+- Monitor cache hit rates
+
+**Priority Justification:** P3 - Performance optimization, not critical for MVP
+
+---
+
+### 8. Refactor Query Building Pattern (P3)
+**Target Epic:** Future Technical Debt Epic  
+**Status:** 🔴 Not Started  
+**Effort:** 1 hour
+
+**Context:**
+Starvation endpoint uses `sql` template concatenation for dynamic filters. While safe (parameterized), it's non-standard compared to other endpoints.
+
+**Affected Files:**
+- `apps/web/app/api/v1/admin/reports/fairness/starvation/route.ts`
+- `apps/web/app/api/v1/admin/reports/providers/flags/route.ts`
+
+**Implementation:**
+- Standardize conditional WHERE clause building
+- Use fragment composition pattern
+- Document pattern for team consistency
+
+**Priority Justification:** P3 - Code quality improvement, not functional issue
 
