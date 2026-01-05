@@ -331,6 +331,32 @@ async function ensureEpic11Schema() {
   `)
 }
 
+async function ensureEpic12Schema() {
+  // EPIC 12: Add dead letter queue table
+  await sql.unsafe(`
+    CREATE TABLE IF NOT EXISTS dead_letter_queue (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      queue_name VARCHAR(100) NOT NULL,
+      job_id VARCHAR(100),
+      payload JSONB,
+      error_message TEXT,
+      stack_trace TEXT,
+      attempts INT,
+      failed_at TIMESTAMPTZ NOT NULL,
+      resolved BOOLEAN DEFAULT FALSE,
+      resolved_at TIMESTAMPTZ,
+      resolved_by UUID REFERENCES users(id),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_dlq_queue_failed_at
+      ON dead_letter_queue(queue_name, failed_at DESC);
+
+    CREATE INDEX IF NOT EXISTS idx_dlq_resolved
+      ON dead_letter_queue(resolved, failed_at DESC);
+  `)
+}
+
 async function ensureEpic09Schema() {
   // EPIC 09: Add bad lead & refund fields and indexes
   await sql.unsafe(`
@@ -704,6 +730,9 @@ async function migrate() {
       
       // EPIC 11: Ensure report export jobs schema
       await ensureEpic11Schema()
+      
+      // EPIC 12: Ensure dead letter queue schema
+      await ensureEpic12Schema()
       
       const tables = await sql`
         SELECT table_name 

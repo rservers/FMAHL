@@ -13,7 +13,7 @@ import { sql } from '@/lib/db'
 import { logAudit, AuditActions } from '@/lib/services/audit-logger'
 
 export async function POST(request: NextRequest) {
-  return adminWithMFA(async (user) => {
+  return adminWithMFA(async (request, user) => {
     try {
       // Parse and validate request body
       const body = await request.json()

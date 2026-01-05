@@ -634,6 +634,28 @@ CREATE INDEX IF NOT EXISTS idx_report_exports_requested_by_created
 CREATE INDEX IF NOT EXISTS idx_report_exports_status_created
   ON report_export_jobs(status, created_at DESC);
 
+-- EPIC 12: Dead Letter Queue
+CREATE TABLE IF NOT EXISTS dead_letter_queue (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  queue_name VARCHAR(100) NOT NULL,
+  job_id VARCHAR(100),
+  payload JSONB,
+  error_message TEXT,
+  stack_trace TEXT,
+  attempts INT,
+  failed_at TIMESTAMPTZ NOT NULL,
+  resolved BOOLEAN DEFAULT FALSE,
+  resolved_at TIMESTAMPTZ,
+  resolved_by UUID REFERENCES users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_dlq_queue_failed_at
+  ON dead_letter_queue(queue_name, failed_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_dlq_resolved
+  ON dead_letter_queue(resolved, failed_at DESC);
+
 -- ============================================
 -- UPDATED_AT TRIGGER
 -- ============================================
