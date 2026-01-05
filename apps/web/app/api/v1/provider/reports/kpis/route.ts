@@ -70,8 +70,19 @@ export async function GET(request: NextRequest) {
       // Build query based on group_by
       let kpisQuery
       if (group_by === 'niche') {
-        // Group by niche
+        // Group by niche with subquery for ledger aggregation to avoid Cartesian product
         kpisQuery = sql`
+          WITH ledger_summary AS (
+            SELECT 
+              pl.related_lead_id,
+              SUM(pl.amount) FILTER (WHERE pl.entry_type = 'lead_purchase') as lead_purchase_amount
+            FROM provider_ledger pl
+            WHERE pl.provider_id = ${providerId}
+              AND pl.created_at >= ${fromDate}
+              AND pl.created_at <= ${toDate}
+              AND pl.related_lead_id IS NOT NULL
+            GROUP BY pl.related_lead_id
+          )
           SELECT 
             l.niche_id,
             n.name as niche_name,
@@ -83,15 +94,12 @@ export async function GET(request: NextRequest) {
             COUNT(*) FILTER (WHERE la.bad_lead_reported_at IS NOT NULL) as bad_lead_reports_count,
             COUNT(*) FILTER (WHERE la.bad_lead_status = 'approved') as bad_lead_approved_count,
             COALESCE(SUM(la.refund_amount), 0) as refunds_amount,
-            COALESCE(SUM(pl.amount) FILTER (WHERE pl.entry_type = 'lead_purchase'), 0) as lead_purchases,
+            COALESCE(SUM(ls.lead_purchase_amount), 0) as lead_purchases,
             COALESCE(SUM(la.refund_amount), 0) as refunds_total
           FROM lead_assignments la
           JOIN leads l ON la.lead_id = l.id
           JOIN niches n ON l.niche_id = n.id
-          LEFT JOIN provider_ledger pl ON pl.provider_id = la.provider_id 
-            AND pl.related_lead_id = la.lead_id
-            AND pl.created_at >= ${fromDate}
-            AND pl.created_at <= ${toDate}
+          LEFT JOIN ledger_summary ls ON ls.related_lead_id = la.lead_id
           WHERE la.provider_id = ${providerId}
             AND la.assigned_at >= ${fromDate}
             AND la.assigned_at <= ${toDate}
@@ -100,8 +108,19 @@ export async function GET(request: NextRequest) {
           ORDER BY n.name
         `
       } else {
-        // Aggregate across all niches
+        // Aggregate across all niches with subquery
         kpisQuery = sql`
+          WITH ledger_summary AS (
+            SELECT 
+              pl.related_lead_id,
+              SUM(pl.amount) FILTER (WHERE pl.entry_type = 'lead_purchase') as lead_purchase_amount
+            FROM provider_ledger pl
+            WHERE pl.provider_id = ${providerId}
+              AND pl.created_at >= ${fromDate}
+              AND pl.created_at <= ${toDate}
+              AND pl.related_lead_id IS NOT NULL
+            GROUP BY pl.related_lead_id
+          )
           SELECT 
             COUNT(DISTINCT la.id) as assignments_received,
             COUNT(*) FILTER (WHERE la.accepted_at IS NOT NULL) as accepted_count,
@@ -111,14 +130,11 @@ export async function GET(request: NextRequest) {
             COUNT(*) FILTER (WHERE la.bad_lead_reported_at IS NOT NULL) as bad_lead_reports_count,
             COUNT(*) FILTER (WHERE la.bad_lead_status = 'approved') as bad_lead_approved_count,
             COALESCE(SUM(la.refund_amount), 0) as refunds_amount,
-            COALESCE(SUM(pl.amount) FILTER (WHERE pl.entry_type = 'lead_purchase'), 0) as lead_purchases,
+            COALESCE(SUM(ls.lead_purchase_amount), 0) as lead_purchases,
             COALESCE(SUM(la.refund_amount), 0) as refunds_total
           FROM lead_assignments la
           JOIN leads l ON la.lead_id = l.id
-          LEFT JOIN provider_ledger pl ON pl.provider_id = la.provider_id 
-            AND pl.related_lead_id = la.lead_id
-            AND pl.created_at >= ${fromDate}
-            AND pl.created_at <= ${toDate}
+          LEFT JOIN ledger_summary ls ON ls.related_lead_id = la.lead_id
           WHERE la.provider_id = ${providerId}
             AND la.assigned_at >= ${fromDate}
             AND la.assigned_at <= ${toDate}

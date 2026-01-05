@@ -348,6 +348,15 @@ async function ensureEpic11Schema() {
 
     CREATE INDEX IF NOT EXISTS idx_report_exports_status_created
       ON report_export_jobs(status, created_at DESC);
+
+    -- EPIC 11: Composite indexes for report queries
+    CREATE INDEX IF NOT EXISTS idx_leads_niche_submitted ON leads(niche_id, created_at DESC) WHERE deleted_at IS NULL;
+    CREATE INDEX IF NOT EXISTS idx_leads_niche_confirmed ON leads(niche_id, confirmed_at DESC) WHERE confirmed_at IS NOT NULL AND deleted_at IS NULL;
+    CREATE INDEX IF NOT EXISTS idx_leads_niche_approved_at ON leads(niche_id, approved_at DESC) WHERE approved_at IS NOT NULL AND deleted_at IS NULL;
+    CREATE INDEX IF NOT EXISTS idx_leads_niche_distributed ON leads(niche_id, distributed_at DESC) WHERE distributed_at IS NOT NULL AND deleted_at IS NULL;
+
+    CREATE INDEX IF NOT EXISTS idx_provider_ledger_provider_created_type ON provider_ledger(provider_id, created_at DESC, entry_type);
+    CREATE INDEX IF NOT EXISTS idx_provider_ledger_lead_entry_type ON provider_ledger(related_lead_id, entry_type) WHERE related_lead_id IS NOT NULL;
   `)
 }
 

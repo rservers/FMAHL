@@ -75,10 +75,10 @@ export async function GET(request: NextRequest) {
           )
           SELECT 
             ${sql.unsafe(dateFormat)} as date,
-            COUNT(*) FILTER (WHERE l.submitted_at >= date_bucket AND l.submitted_at < date_bucket + ${bucket === 'hour' ? "INTERVAL '1 hour'" : "INTERVAL '1 day'"}) as submitted,
-            COUNT(*) FILTER (WHERE l.confirmed_at >= date_bucket AND l.confirmed_at < date_bucket + ${bucket === 'hour' ? "INTERVAL '1 hour'" : "INTERVAL '1 day'"}) as confirmed,
-            COUNT(*) FILTER (WHERE l.approved_at >= date_bucket AND l.approved_at < date_bucket + ${bucket === 'hour' ? "INTERVAL '1 hour'" : "INTERVAL '1 day'"}) as approved,
-            COUNT(*) FILTER (WHERE l.distributed_at >= date_bucket AND l.distributed_at < date_bucket + ${bucket === 'hour' ? "INTERVAL '1 hour'" : "INTERVAL '1 day'"}) as distributed
+            COUNT(*) FILTER (WHERE l.submitted_at IS NOT NULL AND l.submitted_at >= date_bucket AND l.submitted_at < date_bucket + ${bucket === 'hour' ? "INTERVAL '1 hour'" : "INTERVAL '1 day'"}) as submitted,
+            COUNT(*) FILTER (WHERE l.confirmed_at IS NOT NULL AND l.confirmed_at >= date_bucket AND l.confirmed_at < date_bucket + ${bucket === 'hour' ? "INTERVAL '1 hour'" : "INTERVAL '1 day'"}) as confirmed,
+            COUNT(*) FILTER (WHERE l.approved_at IS NOT NULL AND l.approved_at >= date_bucket AND l.approved_at < date_bucket + ${bucket === 'hour' ? "INTERVAL '1 hour'" : "INTERVAL '1 day'"}) as approved,
+            COUNT(*) FILTER (WHERE l.distributed_at IS NOT NULL AND l.distributed_at >= date_bucket AND l.distributed_at < date_bucket + ${bucket === 'hour' ? "INTERVAL '1 hour'" : "INTERVAL '1 day'"}) as distributed
           FROM date_series
           LEFT JOIN leads l ON l.niche_id = ${niche_id} AND l.deleted_at IS NULL
           GROUP BY date_bucket
@@ -96,10 +96,10 @@ export async function GET(request: NextRequest) {
           )
           SELECT 
             ${sql.unsafe(dateFormat)} as date,
-            COUNT(*) FILTER (WHERE l.submitted_at >= date_bucket AND l.submitted_at < date_bucket + ${bucket === 'hour' ? "INTERVAL '1 hour'" : "INTERVAL '1 day'"}) as submitted,
-            COUNT(*) FILTER (WHERE l.confirmed_at >= date_bucket AND l.confirmed_at < date_bucket + ${bucket === 'hour' ? "INTERVAL '1 hour'" : "INTERVAL '1 day'"}) as confirmed,
-            COUNT(*) FILTER (WHERE l.approved_at >= date_bucket AND l.approved_at < date_bucket + ${bucket === 'hour' ? "INTERVAL '1 hour'" : "INTERVAL '1 day'"}) as approved,
-            COUNT(*) FILTER (WHERE l.distributed_at >= date_bucket AND l.distributed_at < date_bucket + ${bucket === 'hour' ? "INTERVAL '1 hour'" : "INTERVAL '1 day'"}) as distributed
+            COUNT(*) FILTER (WHERE l.submitted_at IS NOT NULL AND l.submitted_at >= date_bucket AND l.submitted_at < date_bucket + ${bucket === 'hour' ? "INTERVAL '1 hour'" : "INTERVAL '1 day'"}) as submitted,
+            COUNT(*) FILTER (WHERE l.confirmed_at IS NOT NULL AND l.confirmed_at >= date_bucket AND l.confirmed_at < date_bucket + ${bucket === 'hour' ? "INTERVAL '1 hour'" : "INTERVAL '1 day'"}) as confirmed,
+            COUNT(*) FILTER (WHERE l.approved_at IS NOT NULL AND l.approved_at >= date_bucket AND l.approved_at < date_bucket + ${bucket === 'hour' ? "INTERVAL '1 hour'" : "INTERVAL '1 day'"}) as approved,
+            COUNT(*) FILTER (WHERE l.distributed_at IS NOT NULL AND l.distributed_at >= date_bucket AND l.distributed_at < date_bucket + ${bucket === 'hour' ? "INTERVAL '1 hour'" : "INTERVAL '1 day'"}) as distributed
           FROM date_series
           LEFT JOIN leads l ON l.deleted_at IS NULL
           GROUP BY date_bucket
