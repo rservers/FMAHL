@@ -103,6 +103,13 @@ export const AuditActions = {
   BAD_LEAD_APPROVED: 'bad_lead.approved',
   BAD_LEAD_REJECTED: 'bad_lead.rejected',
   BAD_LEAD_REFUND_PROCESSED: 'bad_lead.refund_processed',
+  
+  // Reporting & analytics actions (EPIC 11)
+  REPORT_ACCESSED: 'report.accessed',
+  REPORT_EXPORT_REQUESTED: 'report.export_requested',
+  REPORT_EXPORT_COMPLETED: 'report.export_completed',
+  REPORT_EXPORT_FAILED: 'report.export_failed',
+  REPORT_EXPORT_DOWNLOADED: 'report.export_downloaded',
 } as const
 
 export type AuditAction = typeof AuditActions[keyof typeof AuditActions]

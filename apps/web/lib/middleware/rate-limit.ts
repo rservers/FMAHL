@@ -133,6 +133,13 @@ export const RateLimits = {
     keyPrefix: 'ratelimit:bad_lead_report',
   } as RateLimitConfig,
 
+  /** Provider export: 5 per provider per day (EPIC 11) */
+  REPORT_EXPORT_PROVIDER: {
+    limit: 5,
+    windowSeconds: 24 * 60 * 60, // 24 hours
+    keyPrefix: 'ratelimit:report_export_provider',
+  } as RateLimitConfig,
+
   /** Lead confirmation: 10 per IP per minute (EPIC 02) */
   LEAD_CONFIRMATION: {
     limit: 10,
