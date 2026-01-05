@@ -4,6 +4,7 @@ import { ConnectionOptions, Queue, Worker } from 'bullmq'
 import IORedis from 'ioredis'
 import { emailWorker } from './processors/email'
 import { createDistributionWorker } from './processors/distribution'
+import { processReportExport } from './processors/report-export'
 
 // Load .env.local from project root (2 levels up from this file)
 config({ path: resolve(__dirname, '../../../.env.local') })
@@ -35,11 +36,26 @@ distributionWorker.on('failed', (job, err) => {
   console.error(`❌ Distribution job ${job?.id} failed:`, err)
 })
 
+// Report export worker (EPIC 11)
+const reportExportWorker = new Worker('report-export', processReportExport, {
+  connection,
+  concurrency: 2,
+})
+
+reportExportWorker.on('completed', (job) => {
+  console.log(`✅ Report export job ${job.id} completed`)
+})
+
+reportExportWorker.on('failed', (job, err) => {
+  console.error(`❌ Report export job ${job?.id} failed:`, err)
+})
+
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('🛑 Shutting down worker...')
   await distributionWorker.close()
   await emailWorker.close()
+  await reportExportWorker.close()
   await redis.quit()
   process.exit(0)
 })
@@ -48,6 +64,7 @@ process.on('SIGINT', async () => {
   console.log('🛑 Shutting down worker...')
   await distributionWorker.close()
   await emailWorker.close()
+  await reportExportWorker.close()
   await redis.quit()
   process.exit(0)
 })
