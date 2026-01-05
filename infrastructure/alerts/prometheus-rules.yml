@@ -1,0 +1,93 @@
+# Prometheus Alerting Rules for EPIC 12
+# 
+# @see .cursor/docs/Delivery/Epic_12_Observability_and_Ops_LOCKED_v4.md
+
+groups:
+  - name: fmhl-alerts
+    interval: 30s
+    rules:
+      # Distribution Duration High
+      - alert: DistributionDurationHigh
+        expr: histogram_quantile(0.95, fmhl_distribution_duration_ms) > 2000
+        for: 5m
+        labels:
+          severity: warning
+          component: distribution
+        annotations:
+          summary: "Distribution job duration is high"
+          description: "P95 distribution duration is {{ $value }}ms (threshold: 2000ms) for 5 minutes"
+          runbook_url: "https://docs.findmeahotlead.com/runbooks/distribution-slow"
+
+      # Billing Failures
+      - alert: BillingFailuresHigh
+        expr: rate(fmhl_billing_failures_total[1m]) > 1
+        for: 1m
+        labels:
+          severity: critical
+          component: billing
+        annotations:
+          summary: "High rate of billing failures"
+          description: "Billing failure rate is {{ $value }}/min (threshold: 1/min)"
+          runbook_url: "https://docs.findmeahotlead.com/runbooks/billing-failures"
+
+      # Queue Backlog High
+      - alert: QueueBacklogHigh
+        expr: fmhl_queue_depth > 100
+        for: 10m
+        labels:
+          severity: warning
+          component: queue
+        annotations:
+          summary: "Queue backlog is high"
+          description: "Queue {{ $labels.queue }} has {{ $value }} jobs waiting (threshold: 100) for 10 minutes"
+          runbook_url: "https://docs.findmeahotlead.com/runbooks/queue-backlog"
+
+      # High DLQ Size
+      - alert: DLQSizeHigh
+        expr: fmhl_dlq_size > 100
+        for: 5m
+        labels:
+          severity: critical
+          component: queue
+        annotations:
+          summary: "Dead letter queue size is high"
+          description: "DLQ for queue {{ $labels.queue }} has {{ $value }} entries (threshold: 100) for 5 minutes"
+          runbook_url: "https://docs.findmeahotlead.com/runbooks/dlq-size"
+
+      # Inbox Query Slow
+      - alert: InboxQuerySlow
+        expr: histogram_quantile(0.95, fmhl_inbox_query_duration_ms) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: provider-dashboard
+        annotations:
+          summary: "Provider inbox query is slow"
+          description: "P95 inbox query duration is {{ $value }}ms (threshold: 1000ms) for 5 minutes"
+          runbook_url: "https://docs.findmeahotlead.com/runbooks/inbox-slow"
+
+      # Job Failure Rate High
+      - alert: JobFailureRateHigh
+        expr: |
+          rate(fmhl_jobs_failed_total[5m]) / rate(fmhl_jobs_enqueued_total[5m]) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+          component: queue
+        annotations:
+          summary: "High job failure rate"
+          description: "Queue {{ $labels.queue }} has {{ $value | humanizePercentage }} failure rate (threshold: 5%)"
+          runbook_url: "https://docs.findmeahotlead.com/runbooks/job-failures"
+
+      # Health Check Failing
+      - alert: HealthCheckFailing
+        expr: up{job="web"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: infrastructure
+        annotations:
+          summary: "Health check is failing"
+          description: "Web application health check has been failing for 2 minutes"
+          runbook_url: "https://docs.findmeahotlead.com/runbooks/health-check"
+

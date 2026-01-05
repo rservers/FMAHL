@@ -5,6 +5,7 @@ import { EmailJobData, EmailJobResult } from '@findmeahotlead/email/queue/types'
 import { renderTemplateByKey } from '@findmeahotlead/email'
 import { emailService } from '@findmeahotlead/email'
 import { recordEmailEvent } from '@findmeahotlead/email/events/tracker'
+import { setupDLQCapture } from '../lib/dlq'
 
 // Load env
 config({ path: resolve(__dirname, '../../../../.env.local') })
@@ -71,6 +72,8 @@ export const emailWorker = new Worker<EmailJobData, EmailJobResult, EmailJobName
     concurrency: 10,
   }
 )
+
+setupDLQCapture(emailWorker, 'email_send')
 
 emailWorker.on('completed', (job, result) => {
   console.log(`✅ Email job ${job.id} completed`, result)
