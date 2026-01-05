@@ -319,35 +319,6 @@ async function ensureEpic11Schema() {
 
     CREATE INDEX IF NOT EXISTS idx_report_exports_status_created
       ON report_export_jobs(status, created_at DESC);
-  `)
-}
-
-async function ensureEpic11Schema() {
-  // EPIC 11: Add report export jobs table
-  await sql.unsafe(`
-    CREATE TABLE IF NOT EXISTS report_export_jobs (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      requested_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      actor_role VARCHAR(20) NOT NULL CHECK (actor_role IN ('admin','provider')),
-      scope VARCHAR(20) NOT NULL CHECK (scope IN ('admin','provider')),
-      type VARCHAR(50) NOT NULL,
-      filters JSONB,
-      format VARCHAR(10) NOT NULL DEFAULT 'csv',
-      status VARCHAR(20) NOT NULL CHECK (status IN ('pending','processing','completed','failed')),
-      row_count INTEGER,
-      artifact_path TEXT,
-      download_expires_at TIMESTAMPTZ,
-      file_expires_at TIMESTAMPTZ,
-      error TEXT,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_report_exports_requested_by_created
-      ON report_export_jobs(requested_by, created_at DESC);
-
-    CREATE INDEX IF NOT EXISTS idx_report_exports_status_created
-      ON report_export_jobs(status, created_at DESC);
 
     -- EPIC 11: Composite indexes for report queries
     CREATE INDEX IF NOT EXISTS idx_leads_niche_submitted ON leads(niche_id, created_at DESC) WHERE deleted_at IS NULL;
