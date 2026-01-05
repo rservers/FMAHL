@@ -9,7 +9,6 @@
 import { NextResponse } from 'next/server'
 import { sql } from '@/lib/db'
 import { getRedis } from '@/lib/redis'
-import { getQueue } from '@/lib/queue'
 import type { HealthCheckResponse } from '@/lib/types/observability'
 
 export async function GET() {
@@ -39,8 +38,9 @@ export async function GET() {
     allHealthy = false
   }
 
-  // Check queue (BullMQ)
+  // Check queue (BullMQ) - use dynamic import to avoid build-time dependency
   try {
+    const { getQueue } = await import('@/lib/queue')
     const queue = getQueue('distribution') // Check any queue
     const start = Date.now()
     const jobCounts = await queue.getJobCounts()
