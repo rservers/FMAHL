@@ -18,8 +18,8 @@ export async function POST(request: NextRequest) {
     try {
       // Check rate limit
       const rateLimitResult = await checkRateLimit(
-        RateLimits.REPORT_EXPORT_PROVIDER,
-        user.id
+        user.id,
+        RateLimits.REPORT_EXPORT_PROVIDER
       )
 
       if (!rateLimitResult.allowed) {

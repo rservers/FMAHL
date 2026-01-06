@@ -94,6 +94,11 @@ export const AuditActions = {
     REPORT_EXPORT_COMPLETED: 'report.export_completed',
     REPORT_EXPORT_FAILED: 'report.export_failed',
     REPORT_EXPORT_DOWNLOADED: 'report.export_downloaded',
+    // Observability & ops actions (EPIC 12)
+    DLQ_ENTRY_VIEWED: 'dlq.entry_viewed',
+    DLQ_JOB_RETRIED: 'dlq.job_retried',
+    DLQ_ENTRY_RESOLVED: 'dlq.entry_resolved',
+    SYSTEM_JOB_COMPLETED: 'system.job_completed',
 };
 /**
  * Log an audit entry

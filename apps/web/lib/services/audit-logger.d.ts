@@ -80,6 +80,10 @@ export declare const AuditActions: {
     readonly REPORT_EXPORT_COMPLETED: "report.export_completed";
     readonly REPORT_EXPORT_FAILED: "report.export_failed";
     readonly REPORT_EXPORT_DOWNLOADED: "report.export_downloaded";
+    readonly DLQ_ENTRY_VIEWED: "dlq.entry_viewed";
+    readonly DLQ_JOB_RETRIED: "dlq.job_retried";
+    readonly DLQ_ENTRY_RESOLVED: "dlq.entry_resolved";
+    readonly SYSTEM_JOB_COMPLETED: "system.job_completed";
 };
 export type AuditAction = typeof AuditActions[keyof typeof AuditActions];
 /**
