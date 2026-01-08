@@ -1,6 +1,6 @@
 # Deferred Items - Master Tracker
 
-**Last Updated:** Jan 4, 2026 (EPIC 08 Review)  
+**Last Updated:** Jan 5, 2026 (Added lead volume limits feature)  
 **Status:** Active
 
 ---
@@ -268,6 +268,76 @@ This document tracks all deferred items identified during epic reviews. Each ite
 
 ---
 
+### 3. Lead Volume Limits per Competition Level (P2)
+**Target Epic:** Future Enhancement Epic (Provider Controls)  
+**Status:** 🔴 Not Started  
+**Effort:** 6 hours
+
+**Context:** Service Providers need control over lead intake volume to manage capacity and prevent overload. Currently, providers receive all leads from subscribed competition levels without volume limits.
+
+**Recommendation:**
+- Allow providers to set maximum leads per day/week/month for each competition level subscription
+- Enforce limits during distribution engine assignment phase
+- Track usage and reset counters based on period (daily/weekly/monthly)
+- Provide UI for providers to configure limits
+- Show current usage vs. limits in provider dashboard
+
+**Implementation:**
+- Add columns to `competition_level_subscriptions` table:
+  - `max_leads_per_day` INTEGER NULL
+  - `max_leads_per_week` INTEGER NULL
+  - `max_leads_per_month` INTEGER NULL
+- Create `provider_lead_usage` table to track current period usage:
+  ```sql
+  CREATE TABLE provider_lead_usage (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    provider_id UUID REFERENCES providers(id),
+    competition_level_id UUID REFERENCES competition_levels(id),
+    period_type VARCHAR(10) CHECK (period_type IN ('day','week','month')),
+    period_start TIMESTAMPTZ NOT NULL,
+    lead_count INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(provider_id, competition_level_id, period_type, period_start)
+  );
+  ```
+- Update distribution engine (`apps/web/lib/services/distribution/engine.ts`):
+  - Check lead limits before assignment
+  - Increment usage counter on successful assignment
+  - Skip provider if limit reached for current period
+- Add API endpoints:
+  - `GET /api/v1/provider/subscriptions/:id/limits` - Get current limits
+  - `PUT /api/v1/provider/subscriptions/:id/limits` - Update limits
+  - `GET /api/v1/provider/subscriptions/:id/usage` - Get current usage
+- Add provider UI:
+  - Settings page for each subscription
+  - Usage dashboard showing current period consumption
+  - Visual indicators when approaching limits
+
+**Database Migration:**
+- Add columns to `competition_level_subscriptions`
+- Create `provider_lead_usage` table with indexes
+- Create function to reset daily/weekly/monthly counters
+
+**Distribution Logic:**
+- Before assignment, check if provider has reached limit for current period
+- Period calculation:
+  - Daily: Reset at midnight UTC
+  - Weekly: Reset on Monday 00:00 UTC
+  - Monthly: Reset on 1st of month 00:00 UTC
+- Skip provider if any limit reached (most restrictive applies)
+- Log skipped assignments with reason: `limit_reached`
+
+**Expected Impact:**
+- Better provider control over lead intake
+- Prevents provider overload
+- Enables capacity planning
+- Improves provider satisfaction
+
+**Priority Justification:** P2 - Important provider control feature for production, but not critical for MVP launch
+
+---
+
 ## From EPIC 05 (Filters & Eligibility)
 
 ### No Deferred Items ✅
@@ -495,6 +565,7 @@ All MVP requirements for EPIC 05 were implemented. P3 future enhancements noted 
 ### P2 (Important for Production)
 - 🔴 Rate limiting for admin lead routes (EPIC 01) - 2 hours
 - 🔴 Email queue monitoring (EPIC 12) - 4 hours
+- 🔴 Lead volume limits per competition level (Future) - 6 hours
 
 ### P3 (Nice to Have)
 - 🔴 Caching for stats endpoint (EPIC 11) - 2 hours
@@ -524,9 +595,9 @@ All MVP requirements for EPIC 05 were implemented. P3 future enhancements noted 
 
 ## Total Deferred Effort
 
-**P2 Items:** 6 hours  
+**P2 Items:** 12 hours  
 **P3 Items:** 38.5 hours  
-**Total:** 44.5 hours (~5.5 days)
+**Total:** 50.5 hours (~6.3 days)
 
 ---
 
